@@ -132,7 +132,7 @@ pywin32-ctypes==0.2.2
 PyYAML==3.13
 pyzmq==25.1.1
 razorpay==1.4.2
-renv==0.3.1
+
 requests==2.31.0
 requests-oauthlib==2.0.0
 requests-toolbelt==1.0.0
