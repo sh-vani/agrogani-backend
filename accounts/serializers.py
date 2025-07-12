@@ -1,0 +1,17 @@
+from rest_framework import serializers
+from .models import User, OTP
+
+class RegisterSerializer(serializers.Serializer):
+    full_name = serializers.CharField()
+    email = serializers.EmailField(required=False)
+    mobile = serializers.CharField(required=False)
+
+class VerifyOTPSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=False)
+    mobile = serializers.CharField(required=False)
+    otp = serializers.CharField()
+
+class SetPasswordSerializer(serializers.Serializer):
+    email_or_mobile = serializers.CharField()
+    password = serializers.CharField()
+    confirm_password = serializers.CharField()

@@ -1,0 +1,118 @@
+from django.shortcuts import render
+
+# Create your views here.
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from .models import User, OTP, Plan
+from .serializers import RegisterSerializer, VerifyOTPSerializer, SetPasswordSerializer
+from django.core.mail import send_mail
+from random import randint
+
+class RegisterView(APIView):
+    def post(self, request):
+        serializer = RegisterSerializer(data=request.data)
+        if serializer.is_valid():
+            email = serializer.validated_data.get('email')
+            mobile = serializer.validated_data.get('mobile')
+            full_name = serializer.validated_data['full_name']
+
+            if User.objects.filter(email=email).exists() or User.objects.filter(mobile=mobile).exists():
+                return Response({'detail': 'User already exists with this email or mobile.'}, status=400)
+
+            user = User.objects.create(
+                email=email,
+                mobile=mobile,
+                full_name=full_name,
+                plan=Plan.objects.get(name="Free")
+            )
+
+            email_otp = str(randint(100000, 999999))
+            mobile_otp = str(randint(100000, 999999))
+            OTP.objects.create(user=user, email_otp=email_otp, mobile_otp=mobile_otp)
+
+            if email:
+                send_mail(
+                    'Your AgroGanit Email OTP',
+                    f'Your OTP is {email_otp}',
+                    'yourmail@example.com',
+                    [email]
+                )
+            if mobile:
+                # Yaha SMS service integrate karni hai
+                print(f'Mobile OTP: {mobile_otp}')  # Abhi print kar rahe
+
+            return Response({'detail': 'OTP sent on provided email and mobile.'})
+        return Response(serializer.errors, status=400)
+
+class VerifyOTPView(APIView):
+    def post(self, request):
+        serializer = VerifyOTPSerializer(data=request.data)
+        if serializer.is_valid():
+            email = serializer.validated_data.get('email')
+            mobile = serializer.validated_data.get('mobile')
+            otp = serializer.validated_data['otp']
+
+            try:
+                user = None
+                if email:
+                    user = User.objects.get(email=email)
+                elif mobile:
+                    user = User.objects.get(mobile=mobile)
+
+                user_otp = OTP.objects.get(user=user)
+                if user_otp.email_otp == otp or user_otp.mobile_otp == otp:
+                    return Response({'detail': 'OTP verified successfully. Now set password.'})
+                else:
+                    return Response({'detail': 'Invalid OTP.'}, status=400)
+            except User.DoesNotExist:
+                return Response({'detail': 'User not found.'}, status=400)
+        return Response(serializer.errors, status=400)
+
+class SetPasswordView(APIView):
+    def post(self, request):
+        serializer = SetPasswordSerializer(data=request.data)
+        if serializer.is_valid():
+            identifier = serializer.validated_data['email_or_mobile']
+            password = serializer.validated_data['password']
+            confirm_password = serializer.validated_data['confirm_password']
+
+            if password != confirm_password:
+                return Response({'detail': 'Passwords do not match.'}, status=400)
+
+            try:
+                user = User.objects.filter(email=identifier).first() or User.objects.filter(mobile=identifier).first()
+                user.set_password(password)
+                user.save()
+                return Response({'detail': 'User registered successfully!'})
+            except:
+                return Response({'detail': 'User not found.'}, status=400)
+        return Response(serializer.errors, status=400)
+
+
+from rest_framework_simplejwt.tokens import RefreshToken
+from django.contrib.auth import authenticate
+
+class LoginView(APIView):
+    def post(self, request):
+        email_or_mobile = request.data.get('email_or_mobile')
+        password = request.data.get('password')
+
+        # Try to get user by email or mobile
+        user = User.objects.filter(email=email_or_mobile).first() or User.objects.filter(mobile=email_or_mobile).first()
+
+        if user is None:
+            return Response({"detail": "User not found."}, status=404)
+
+        if not user.check_password(password):
+            return Response({"detail": "Invalid password."}, status=400)
+
+        # Generate JWT
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            "refresh": str(refresh),
+            "access": str(refresh.access_token),
+            "user_id": user.id,
+            "full_name": user.full_name,
+            "plan": user.plan.name if user.plan else None
+        })
