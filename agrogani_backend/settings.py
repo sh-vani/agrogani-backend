@@ -147,6 +147,21 @@ STATIC_URL = 'static/'
 #     }
 # }
 # SMTP Email for OTP (gmail settings)
+
+
+
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'railway',
+        'USER': 'root',
+        'PASSWORD': 'wHrfuzKvcJmlyiukEEswuQchEKjAXhCt',
+        'HOST': 'switchyard.proxy.rlwy.net',
+        'PORT': '41838',
+    }
+}
+
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
@@ -185,7 +200,7 @@ import dj_database_url
 import os
 
 DATABASES = {
-    'default': dj_database_url.config(default=os.environ.get('MYSQL_PUBLIC_URL'))
+    'default': dj_database_url.config(default=os.environ.get('DATABASE_URL'))
 }
 
 ALLOWED_HOSTS = ['*']
@@ -197,17 +212,5 @@ import os
 from dotenv import load_dotenv
 import dj_database_url
 
-# Load from .env file
-load_dotenv()
-
-SECRET_KEY = os.getenv("SECRET_KEY")
-DEBUG = os.getenv("DEBUG", "False") == "True"
-
-DATABASES = {
-    "default": dj_database_url.config(
-        default=os.getenv("DATABASE_URL"),
-        conn_max_age=600,
-    )
-}
 
 
