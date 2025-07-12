@@ -81,7 +81,7 @@ multidict==6.0.4
 multipledispatch==1.0.0
 mysql-connector==2.2.9
 mysql-connector-python==8.2.0
-mysqlclient==2.2.4
+
 named==1.4.2
 nest-asyncio==1.5.8
 numpy==1.26.1
