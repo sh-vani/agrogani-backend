@@ -209,9 +209,9 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 import os
 from dotenv import load_dotenv
 
-import os
+# import os
 
-PORT = os.getenv("PORT", "8000")  # fallback for local
+# PORT = os.getenv("PORT", "8000")  # fallback for local
 
 # import dj_database_url
 # DATABASES = {
