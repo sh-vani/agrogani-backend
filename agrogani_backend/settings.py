@@ -209,8 +209,7 @@ DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 import os
 from dotenv import load_dotenv
-# import dj_database_url
-
-# DATABASES = {
-#     'default': dj_database_url.config(conn_max_age=600)
-# }
+import dj_database_url
+DATABASES = {
+    'default': dj_database_url.config(default='mysql://root:wHrfuzKvcJmlyiukEEswuQchEKjAXhCt@switchyard.proxy.rlwy.net:41838/railway', conn_max_age=600)
+}
