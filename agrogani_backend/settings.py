@@ -10,7 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
-from pathlib import Path
+from pathlib import Path 
 import pymysql
 pymysql.install_as_MySQLdb()
 
@@ -29,7 +29,7 @@ SECRET_KEY = 'django-insecure-@btt0sq!crhd=k%1xk83^3j5^4+6v0qa7&v!-56t$oklp=-g4v
 DEBUG = True
 
 # ALLOWED_HOSTS = ['34e5-2402-8100-2711-7fd3-4150-960d-bd7a-d49a.ngrok-free.app']
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '.ngrok-free.app','c']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '.ngrok-free.app','*']
 
 
 
@@ -201,9 +201,6 @@ SIMPLE_JWT = {
 import dj_database_url
 import os
 
-DATABASES = {
-    'default': dj_database_url.config(default=os.environ.get('DATABASE_URL'))
-}
 
 ALLOWED_HOSTS = ['*']
 SECRET_KEY = os.environ.get('SECRET_KEY', 'fallback-secret')
