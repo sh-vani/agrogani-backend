@@ -32,7 +32,6 @@ DEBUG = True
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', '.ngrok-free.app','*']
 
 
-
 # Application definition
 
 INSTALLED_APPS = [
@@ -206,9 +205,14 @@ ALLOWED_HOSTS = ['*']
 SECRET_KEY = os.environ.get('SECRET_KEY', 'fallback-secret')
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+# STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 import os
 from dotenv import load_dotenv
+
+import os
+
+PORT = os.getenv("PORT", "8000")  # fallback for local
+
 # import dj_database_url
 # DATABASES = {
 #     'default': dj_database_url.config(default='mysql://root:wHrfuzKvcJmlyiukEEswuQchEKjAXhCt@switchyard.proxy.rlwy.net:41838/railway', conn_max_age=600)
