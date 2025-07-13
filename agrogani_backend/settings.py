@@ -205,7 +205,7 @@ ALLOWED_HOSTS = ['*']
 SECRET_KEY = os.environ.get('SECRET_KEY', 'fallback-secret')
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
-# STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 import os
 from dotenv import load_dotenv
 
