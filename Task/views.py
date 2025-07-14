@@ -21,7 +21,7 @@ class AddTaskView(APIView):
             return Response(serializer.errors, status=400)
         except Exception as e:
             import traceback
-            print("ERROR")
+            print("ERROR 🔥")
             traceback.print_exc()
             return Response({"error": str(e)}, status=500)
 
