@@ -52,7 +52,7 @@ INSTALLED_APPS = [
       'sale',
       'task',
       'shop',
-    'rest_framework',
+       'rest_framework',
 ]
 
 MIDDLEWARE = [
