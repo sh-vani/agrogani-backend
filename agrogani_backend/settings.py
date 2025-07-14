@@ -50,7 +50,7 @@ INSTALLED_APPS = [
       'labour',
       'expenses',
       'sale',
-      'Task',
+      'task',
       'shop',
     'rest_framework',
 ]
