@@ -29,11 +29,10 @@ class Task(models.Model):
     assigned_to = models.CharField(max_length=100)  # optional: later relate to user/labour table
     priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES)
     weather_sensitive = models.BooleanField(default=False)
-
     details = models.TextField(blank=True)
     is_completed = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
-    is_recurring = models.BooleanField(default=False)
+  
     repeat_type = models.CharField(
     max_length=20,
     choices=[('None', 'None'), ('Daily', 'Daily'), ('Weekly', 'Weekly')],
