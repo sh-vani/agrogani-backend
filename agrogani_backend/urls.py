@@ -30,7 +30,7 @@ urlpatterns = [
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 
 
-  path('', health_check),
+    path('', health_check),
 
     path('admin/', admin.site.urls),
     path('api/account/', include('accounts.urls')),
@@ -44,9 +44,9 @@ urlpatterns = [
    path('api/shop/', include('shop.urls')),
 
 
-             path('api/sale/', include('sale.urls')),
+    path('api/sale/', include('sale.urls')),
                 #  path('api/shop_ledger/',include('shop_ledger.urls')),
-                     path('api/Task/',include('Task.urls')),
+    path('api/Task/',include('Task.urls')),
 ] 
 
 
