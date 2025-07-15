@@ -32,7 +32,7 @@ class Task(models.Model):
     details = models.TextField(blank=True)
     is_completed = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
-  
+    is_recurring = models.BooleanField(default=False)
     repeat_type = models.CharField(
     max_length=20,
     choices=[('None', 'None'), ('Daily', 'Daily'), ('Weekly', 'Weekly')],
