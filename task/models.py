@@ -34,7 +34,7 @@ class Task(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     is_recurring = models.BooleanField(default=False)
     repeat_type = models.CharField(
-    max_length=20,
+    max_length=50,
     choices=[('None', 'None'), ('Daily', 'Daily'), ('Weekly', 'Weekly')],
     default='None'
 )
