@@ -33,11 +33,13 @@ class Task(models.Model):
     is_completed = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     is_recurring = models.BooleanField(default=False)
-    repeat_type = models.CharField(
-    max_length=50,
-    choices=[('None', 'None'), ('Daily', 'Daily'), ('Weekly', 'Weekly')],
-    default='None'
-)
+
+#     repeat_type = models.CharField(
+#     max_length=50,
+#     choices=[('None', 'None'), ('Daily', 'Daily'), ('Weekly', 'Weekly')],
+    
+#     default='None'
+# )
 
 
 
