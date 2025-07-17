@@ -17,7 +17,7 @@ class Task(models.Model):
     ]
     REPEAT_CHOICES = [('None', 'None'), ('Daily', 'Daily'), ('Weekly', 'Weekly'), ('Custom', 'Custom')]
 
-    # user = models.ForeignKey(User, on_delete=models.CASCADE)
+    
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     task_name = models.CharField(max_length=200)
     category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)

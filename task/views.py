@@ -7,16 +7,39 @@ from rest_framework.permissions import IsAuthenticated
 from .models import Task
 from .serializers import TaskSerializer
 
+# class AddTaskView(APIView):
+#     permission_classes = [IsAuthenticated]
+
+#     def post(self, request):
+#         try:
+#             data = request.data.copy()
+        
+#             data['user'] = request.user.id
+#             serializer = TaskSerializer(data=data)
+#             if serializer.is_valid():
+#                 serializer.save()
+#                 return Response({"success": True}, status=201)
+#             return Response(serializer.errors, status=400)
+#         except Exception as e:
+#             import traceback
+#             print("ERROR 🔥")
+#             traceback.print_exc()
+#             return Response({"error": str(e)}, status=500)
+
+
+
+
+
+
+
 class AddTaskView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
         try:
-            data = request.data.copy()
-            data['user'] = request.user.id
-            serializer = TaskSerializer(data=data)
+            serializer = TaskSerializer(data=request.data)
             if serializer.is_valid():
-                serializer.save()
+                serializer.save(user=request.user)  # Set the user here
                 return Response({"success": True}, status=201)
             return Response(serializer.errors, status=400)
         except Exception as e:
@@ -24,6 +47,24 @@ class AddTaskView(APIView):
             print("ERROR 🔥")
             traceback.print_exc()
             return Response({"error": str(e)}, status=500)
+
+# class AddTaskView(APIView):
+#     permission_classes = [IsAuthenticated]
+
+#     def post(self, request):
+#         try:
+#             serializer = TaskSerializer(data=request.data)
+#             if serializer.is_valid():
+#                 serializer.save(user=request.user)  # ✅ safer
+#                 return Response({"success": True}, status=201)
+#             return Response(serializer.errors, status=400)
+#         except Exception as e:
+#             import traceback
+#             print("ERROR 🔥")
+#             traceback.print_exc()
+#             return Response({"error": str(e)}, status=500)
+
+
 
 class TaskListView(APIView):
     permission_classes = [IsAuthenticated]
