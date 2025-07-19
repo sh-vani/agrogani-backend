@@ -21,8 +21,8 @@ class Expense(models.Model):
     PAYMENT_TYPE = [
         ('cash', 'Cash'),
         ('credit', 'Credit'),
-          ('advance', 'Advance'),
-    ('regular', 'Regular'),
+        ('advance', 'Advance'),
+        ('regular', 'Regular'),
     ]
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)

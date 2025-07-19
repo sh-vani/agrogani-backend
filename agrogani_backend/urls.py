@@ -40,9 +40,10 @@ urlpatterns = [
     path('api/weather/', include('weather.urls')),
     path('api/crop/', include('crop.urls')),
      path('api/labour/', include('labour.urls')),
-   path('api/expenses/', include('expenses.urls')),
-   path('api/shop/', include('shop.urls')),
-
+    path('api/expenses/', include('expenses.urls')),
+    path('api/shop/', include('shop.urls')),
+     path('api/reports/', include('reports.urls')),
+ 
 
     path('api/sale/', include('sale.urls')),
                 #  path('api/shop_ledger/',include('shop_ledger.urls')),

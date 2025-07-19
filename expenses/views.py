@@ -80,6 +80,9 @@ class ShopLedgerView(APIView):
 
 
 
+
+
+
 import pandas as pd
 from django.http import HttpResponse
 from io import BytesIO
@@ -268,5 +271,83 @@ class AllShopLedgerAPIView(APIView):
             "total_paid": total_paid,
             "total_due": total_due,
             "last_transaction": last_transaction,
+            "bills": bills
+        })
+
+
+
+from rest_framework import generics, permissions, filters
+from .models import Expense
+from .serializers import ExpenseSerializer
+from django_filters.rest_framework import DjangoFilterBackend
+
+class ExpenseListAPIView(generics.ListAPIView):
+    serializer_class = ExpenseSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    filterset_fields = ['expense_type', 'date', 'crop', 'shop']
+    ordering_fields = ['date', 'paying_amount']
+    ordering = ['-date']
+
+    def get_queryset(self):
+        return Expense.objects.filter(user=self.request.user)
+
+
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from .models import Expense
+from django.db.models import Sum
+
+class AllShopLedgerAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        expenses = Expense.objects.filter(user=user)
+
+        # Filters
+        from_date = request.GET.get("from_date")
+        to_date = request.GET.get("to_date")
+        expense_type = request.GET.get("expense_type")
+
+        if from_date:
+            expenses = expenses.filter(date__gte=from_date)
+        if to_date:
+            expenses = expenses.filter(date__lte=to_date)
+        if expense_type:
+            expenses = expenses.filter(expense_type=expense_type)
+
+        total_amount = expenses.aggregate(Sum('paying_amount'))['paying_amount__sum'] or 0
+        total_paid = sum(exp.paying_amount if exp.payment_type == 'cash' else 0 for exp in expenses)
+        total_due = total_amount - total_paid
+
+        bills = []
+        for exp in expenses.order_by('-date'):
+            paid = exp.paying_amount if exp.payment_type == 'cash' else 0
+            due = exp.paying_amount if exp.payment_type == 'credit' else 0
+            status = "Paid" if paid == exp.paying_amount else ("Partial Paid" if paid > 0 else "Due")
+
+            bills.append({
+                "bill_no": exp.bill_no,
+                "date": exp.date,
+                "shop": exp.shop.name if exp.shop else None,
+                "crop": exp.crop,
+                "expense_type": exp.expense_type,
+                "total_amount": exp.paying_amount,
+                "paid_amount": paid,
+                "due_amount": due,
+                "status": status
+            })
+
+        latest_transaction = expenses.order_by('-date').first()
+
+        return Response({
+            "shop": "All Shops",
+            "total_amount": total_amount,
+            "total_paid": total_paid,
+            "total_due": total_due,
+            "last_transaction": latest_transaction.date if latest_transaction else None,
             "bills": bills
         })

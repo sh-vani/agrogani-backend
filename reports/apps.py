@@ -1,6 +1,6 @@
 from django.apps import AppConfig
 
 
-class BuyerLedgerConfig(AppConfig):
+class ReportsConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'Buyer_ledger'
+    name = 'reports'

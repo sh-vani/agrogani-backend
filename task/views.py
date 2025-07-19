@@ -140,34 +140,6 @@ class TaskListView(APIView):
         return Response(serializer.data)
 
 
-
-
-import csv
-from django.http import HttpResponse
-
-class ExportTasksCSV(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        tasks = Task.objects.filter(user=request.user)
-
-        response = HttpResponse(content_type='text/csv')
-        response['Content-Disposition'] = 'attachment; filename="tasks.csv"'
-
-        writer = csv.writer(response)
-        writer.writerow(['Task Name', 'Category', 'Start Time', 'End Time', 'Status', 'Priority'])
-
-        for task in tasks:
-            writer.writerow([
-                task.task_name,
-                task.category,
-                task.start_datetime,
-                task.end_datetime,
-                'Completed' if task.is_completed else 'Pending',
-                task.priority
-            ])
-
-        return response
 class TaskCalendarView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -185,3 +157,29 @@ class TaskCalendarView(APIView):
 
         serializer = TaskSerializer(tasks, many=True)
         return Response(serializer.data)
+
+
+
+class TaskSummaryView(APIView):
+    # permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        tasks = Task.objects.filter(user=user)
+
+        total_tasks = tasks.count()
+        completed = tasks.filter(status='Completed').count()
+        pending = tasks.filter(status='Pending').count()
+
+        priority_count = {
+            "High": tasks.filter(priority__iexact="High").count(),
+            "Medium": tasks.filter(priority__iexact="Medium").count(),
+            "Low": tasks.filter(priority__iexact="Low").count()
+        }
+
+        return Response({
+            "total_tasks": total_tasks,
+            "completed": completed,
+            "pending": pending,
+            "priority_breakdown": priority_count
+        })

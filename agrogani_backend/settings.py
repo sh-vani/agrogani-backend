@@ -28,6 +28,30 @@ SECRET_KEY = 'django-insecure-@btt0sq!crhd=k%1xk83^3j5^4+6v0qa7&v!-56t$oklp=-g4v
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+
+
+# LOGGING = {
+#     'version': 1,
+#     'disable_existing_loggers': False,
+#     'handlers': {
+#         'console':{
+#             'class': 'logging.StreamHandler',
+#         },
+#         'file': {
+#             'level': 'DEBUG',
+#             'class': 'logging.FileHandler',
+#             'filename': 'django_debug.log',
+#         },
+#     },
+#     'loggers': {
+#         'django': {
+#             'handlers': ['console', 'file'],
+#             'level': 'DEBUG',
+#         },
+#     },
+# }
+
+
 # ALLOWED_HOSTS = ['34e5-2402-8100-2711-7fd3-4150-960d-bd7a-d49a.ngrok-free.app']
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', '.ngrok-free.app','*']
 
@@ -52,7 +76,9 @@ INSTALLED_APPS = [
       'sale',
       'task',
       'shop',
+      'reports',
        'rest_framework',
+
 ]
 
 MIDDLEWARE = [
@@ -66,6 +92,9 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'agrogani_backend.urls'
+REST_FRAMEWORK = {
+    'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
+}
 
 TEMPLATES = [
     {
@@ -179,8 +208,6 @@ REST_FRAMEWORK = {
 AUTH_USER_MODEL = 'accounts.User'
 
 
-RAZORPAY_KEY_ID = 'your_razorpay_key_id'
-RAZORPAY_KEY_SECRET = 'your_razorpay_key_secret'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
@@ -189,8 +216,8 @@ MEDIA_ROOT = BASE_DIR / 'media'
 from datetime import timedelta
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(days=3),  # Set access token to 7 days
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=3),  # Set refresh token to 30 days
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=30),  # Set access token to 7 days
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=40),  # Set refresh token to 30 days
     'ROTATE_REFRESH_TOKENS': False,
     'BLACKLIST_AFTER_ROTATION': True,
     'AUTH_HEADER_TYPES': ('Bearer',),
@@ -217,3 +244,11 @@ from dotenv import load_dotenv
 # DATABASES = {
 #     'default': dj_database_url.config(default='mysql://root:wHrfuzKvcJmlyiukEEswuQchEKjAXhCt@switchyard.proxy.rlwy.net:41838/railway', conn_max_age=600)
 # }
+
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+
+RAZORPAY_KEY_ID = "rzp_test_Wt9uDBVijEMhhU"
+RAZORPAY_KEY_SECRET = "TkpZXRLwI2vqBg8put1DBJCQ"

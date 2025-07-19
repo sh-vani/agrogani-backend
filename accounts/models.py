@@ -98,3 +98,7 @@ class UserPlan(models.Model):
 
 #     def __str__(self):
 #         return self.email or self.mobile
+
+
+
+
