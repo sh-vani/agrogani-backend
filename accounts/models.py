@@ -67,6 +67,15 @@ class UserPlan(models.Model):
         return f"{self.user.username} - {self.plan.name}"
 
 
+class RazorpayLog(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    plan = models.ForeignKey(Plan, on_delete=models.CASCADE)
+    payment_id = models.CharField(max_length=100)
+    order_id = models.CharField(max_length=100)
+    status = models.CharField(max_length=20)  # success or failed
+    amount = models.FloatField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
 # from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 # from django.db import models
 # from django.utils import timezone
