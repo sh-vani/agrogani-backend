@@ -79,7 +79,12 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.db.models import Sum
 from django.shortcuts import get_object_or_404
-from .models import Crop, Expense, QuickSale, DetailedSale
+# from .models import Crop, Expense, QuickSale, DetailedSale
+# ...existing code...
+from crop.models import Crop
+from expenses.models import Expense
+from sale.models import QuickSale, DetailedSale
+# ...existing code...
 from .permissions import IsPaidMember
 
 class CropDetailReportAPIView(APIView):
@@ -118,7 +123,7 @@ class CropDetailReportAPIView(APIView):
         for sale in detailed_sales:
             for item in sale.crops:
                 if item.get("crop_name", "").strip().lower() == crop_name_key:
-                    detailed_sale_total += float(item.get("total_amount", 0))
+                    detailed_sale_total += float(item.get("total_sale_amount", 0))
         detailed_sale_total = round(detailed_sale_total, 2)
 
         revenue_sources = {
@@ -377,12 +382,6 @@ class ExpenseBreakdownAPIView(APIView):
 #         pisa_status = pisa.CreatePDF(html, dest=response)
 
 #         return response if not pisa_status.err else HttpResponse("PDF generation failed", status=500)
-
-
-
-
-
-
 
 # from rest_framework.views import APIView
 # from rest_framework.response import Response

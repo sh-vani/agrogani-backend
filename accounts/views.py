@@ -116,3 +116,89 @@ class LoginView(APIView):
             "full_name": user.full_name,
             "plan": user.plan.name if user.plan else None
         })
+
+
+
+
+
+
+
+
+# razorpay view
+
+import razorpay
+from django.conf import settings
+from .models import RazorpayLog, Plan
+from rest_framework.permissions import IsAuthenticated
+from rest_framework import generics, status
+
+class CreatePlanOrderAPIView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        plan_id = request.data.get('plan_id')
+        plan = Plan.objects.get(id=plan_id)
+
+        client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
+        amount_paise = int(plan.price * 100)
+
+        order_data = {
+            "amount": amount_paise,
+            "currency": "INR",
+            "payment_capture": 1,
+        }
+
+        razorpay_order = client.order.create(data=order_data)
+
+        RazorpayLog.objects.create(
+            user=request.user,
+            plan=plan,
+            order_id=razorpay_order['id'],
+            amount=plan.price,
+            status='created'
+        )
+
+        return Response({
+            "order_id": razorpay_order['id'],
+            "razorpay_key": settings.RAZORPAY_KEY_ID,
+            "amount": plan.price,
+            "currency": "INR",
+            "plan_name": plan.name
+        })
+
+
+
+
+class VerifyPaymentAPIView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        payment_id = request.data.get('payment_id')
+        order_id = request.data.get('order_id')
+        signature = request.data.get('signature')
+
+        client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
+
+        try:
+            client.utility.verify_payment_signature({
+                'razorpay_order_id': order_id,
+                'razorpay_payment_id': payment_id,
+                'razorpay_signature': signature
+            })
+        except razorpay.errors.SignatureVerificationError:
+            return Response({"error": "Payment verification failed."}, status=400)
+
+        log = RazorpayLog.objects.filter(order_id=order_id).last()
+        log.payment_id = payment_id
+        log.status = 'success'
+        log.save()
+
+        request.user.plan = log.plan
+        request.user.device_limit = log.plan.device_limit
+        request.user.save()
+
+        return Response({"message": "Payment verified. Plan upgraded successfully."})
+
+
+
+
