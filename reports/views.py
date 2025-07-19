@@ -66,9 +66,6 @@ class SummaryAPIView(APIView):
 
 
 
-
-
-
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -105,10 +102,10 @@ class CropWiseReportAPIView(APIView):
 
             revenue = quick_sale + detailed_sale_total
 
-            # Investment from Expense
+            # ✅ Fixed Investment from Expense (use ForeignKey to crop)
             investment = Expense.objects.filter(
                 user=user,
-                crop_name__iexact=crop_name
+                crop=crop  # Direct object matching instead of crop_name
             ).aggregate(total=Sum('paying_amount'))['total'] or 0
 
             # Profit & ROI
@@ -127,7 +124,6 @@ class CropWiseReportAPIView(APIView):
             })
 
         return Response(report)
-
 
 
 
