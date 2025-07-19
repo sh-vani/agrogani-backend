@@ -74,70 +74,13 @@ from crop.models import Crop
 from sale.models import QuickSale, DetailedSale
 from expenses.models import Expense
 from django.db.models import Sum
-
-class CropWiseReportAPIView(APIView):
-    permission_classes = [IsAuthenticated, IsPaidMember]
-
-    def get(self, request):
-        user = request.user
-        crops = Crop.objects.filter(user=user)
-        report = []
-
-        for crop in crops:
-            crop_name = crop.crop_name
-
-            # Revenue from QuickSale
-            quick_sale = QuickSale.objects.filter(
-                user=user,
-                crop_name__iexact=crop_name
-            ).aggregate(total=Sum('amount'))['total'] or 0
-
-            # Revenue from DetailedSale (loop through JSONField)
-            detailed_sale_total = 0
-            detailed_sales = DetailedSale.objects.filter(user=user)
-            for sale in detailed_sales:
-                for item in sale.crops:
-                    if item.get("crop_name", "").lower() == crop_name.lower():
-                        detailed_sale_total += item.get("total_amount", 0)
-
-            revenue = quick_sale + detailed_sale_total
-
-            # ✅ Fixed Investment from Expense (use ForeignKey to crop)
-            investment = Expense.objects.filter(
-                user=user,
-                crop=crop  # Direct object matching instead of crop_name
-            ).aggregate(total=Sum('paying_amount'))['total'] or 0
-
-            # Profit & ROI
-            profit = revenue - investment
-            roi = round((profit / investment) * 100, 2) if investment > 0 else 0
-
-            report.append({
-                "crop_name": crop.crop_name,
-                "field_name": crop.field_name,
-                "field_size": f"{crop.field_size} {crop.field_unit}",
-                "crop_type": crop.crop_type,
-                "investment": round(investment, 2),
-                "revenue": round(revenue, 2),
-                "profit": round(profit, 2),
-                "roi": roi
-            })
-
-        return Response(report)
-
-
-
-
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from .permissions import IsPaidMember
-from crop.models import Crop
-from sale.models import QuickSale, DetailedSale
-from expenses.models import Expense
-# from income.models import Subsidy, OtherIncome
 from django.db.models import Sum
 from django.shortcuts import get_object_or_404
+from .models import Crop, Expense, QuickSale, DetailedSale
+from .permissions import IsPaidMember
 
 class CropDetailReportAPIView(APIView):
     permission_classes = [IsAuthenticated, IsPaidMember]
@@ -145,54 +88,48 @@ class CropDetailReportAPIView(APIView):
     def get(self, request, crop_id):
         user = request.user
         crop = get_object_or_404(Crop, id=crop_id, user=user)
-        crop_name = crop.crop_name
+        crop_name_key = crop.crop_name.strip().lower()
 
-        # Investment breakdown by category
-        categories = ['Seeds', 'Fertilizer', 'Labor', 'Equipment', 'Transport', 'Others']
+        # 🔍 Investment Breakdown by expense_type
+        expense_types = ['Seeds', 'Fertilizer', 'Labor', 'Equipment', 'Transport', 'Others']
         cost_breakdown = {}
-        for category in categories:
-            cost = Expense.objects.filter(
+        total_investment = 0.0
+
+        for etype in expense_types:
+            amount = Expense.objects.filter(
                 user=user,
-                crop_name__iexact=crop_name,
-                category__iexact=category
+                crop=crop.crop_name,  # ✅ crop is CharField
+                expense_type__iexact=etype
             ).aggregate(total=Sum('paying_amount'))['total'] or 0
-            cost_breakdown[category] = round(cost, 2)
+            amount = round(float(amount), 2)
+            cost_breakdown[etype] = amount
+            total_investment += amount
 
-        total_investment = sum(cost_breakdown.values())
-
-        # Revenue sources
-        quick_sale = QuickSale.objects.filter(
+        # 💰 Revenue: QuickSale
+        quick_sale_total = QuickSale.objects.filter(
             user=user,
-            crop_name__iexact=crop_name
+            crop_name__iexact=crop.crop_name  # ✅ crop_name is CharField
         ).aggregate(total=Sum('amount'))['total'] or 0
+        quick_sale_total = round(float(quick_sale_total), 2)
 
-        detailed_sale_total = 0
+        # 📦 Revenue: DetailedSale
+        detailed_sale_total = 0.0
         detailed_sales = DetailedSale.objects.filter(user=user)
         for sale in detailed_sales:
             for item in sale.crops:
-                if item.get("crop_name", "").lower() == crop_name.lower():
-                    detailed_sale_total += item.get("total_amount", 0)
-
-        # subsidy = Subsidy.objects.filter(
-        #     user=user,
-        #     crop_name__iexact=crop_name
-        # ).aggregate(total=Sum('amount'))['total'] or 0
-
-        # other_income = OtherIncome.objects.filter(
-        #     user=user,
-        #     crop_name__iexact=crop_name
-        # ).aggregate(total=Sum('amount'))['total'] or 0
+                if item.get("crop_name", "").strip().lower() == crop_name_key:
+                    detailed_sale_total += float(item.get("total_amount", 0))
+        detailed_sale_total = round(detailed_sale_total, 2)
 
         revenue_sources = {
-            "Quick Sale": round(quick_sale, 2),
-            "Detailed Sale": round(detailed_sale_total, 2),
-            # "Subsidy": round(subsidy, 2),
-            # "Other Income": round(other_income, 2)
+            "Quick Sale": quick_sale_total,
+            "Detailed Sale": detailed_sale_total
         }
 
-        total_revenue = sum(revenue_sources.values())
-        profit = total_revenue - total_investment
-        roi = round((profit / total_investment) * 100, 2) if total_investment > 0 else 0
+        # 📊 Financial Summary
+        total_revenue = quick_sale_total + detailed_sale_total
+        profit = round(total_revenue - total_investment, 2)
+        roi_percent = round((profit / total_investment) * 100, 2) if total_investment > 0 else 0.0
 
         return Response({
             "crop_name": crop.crop_name,
@@ -203,12 +140,11 @@ class CropDetailReportAPIView(APIView):
             "irrigation_source": crop.irrigation_source,
             "investment": round(total_investment, 2),
             "revenue": round(total_revenue, 2),
-            "profit": round(profit, 2),
-            "roi": roi,
+            "profit": profit,
+            "roi_percent": roi_percent,
             "cost_breakdown": cost_breakdown,
             "revenue_sources": revenue_sources
         })
-
 
 
 from rest_framework.views import APIView
@@ -248,7 +184,7 @@ class MonthlyTrendsAPIView(APIView):
 
             detailed_sale = DetailedSale.objects.filter(
                 user=user, sale_date__range=[start_date, end_date]
-            ).aggregate(total=Sum('total_sale_amount'))['total_sale_amount'] or 0
+            ).aggregate(total=Sum('total_sale_amount'))['total'] or 0
 
             revenue = quick_sale + detailed_sale
 

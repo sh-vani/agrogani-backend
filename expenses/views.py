@@ -332,9 +332,9 @@ class AllShopLedgerAPIView(APIView):
             bills.append({
                 "bill_no": exp.bill_no,
                 "date": exp.date,
-                "shop": exp.shop.name if exp.shop else None,
-                "crop": exp.crop,
-                "expense_type": exp.expense_type,
+                # "shop": exp.shop.name if exp.shop else None,
+                # "crop": exp.crop,
+                # "expense_type": exp.expense_type,
                 "total_amount": exp.paying_amount,
                 "paid_amount": paid,
                 "due_amount": due,
@@ -351,3 +351,54 @@ class AllShopLedgerAPIView(APIView):
             "last_transaction": latest_transaction.date if latest_transaction else None,
             "bills": bills
         })
+
+
+
+
+
+from django.db.models import Sum
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from .models import Expense
+
+class OverallLedgerSummaryAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        expenses = Expense.objects.filter(user=request.user)
+
+    
+        summary = {
+    "total_amount": expenses.aggregate(Sum('paying_amount'))['paying_amount__sum'] or 0,
+    "total_paid": expenses.aggregate(Sum('paying_amount'))['paying_amount__sum'] or 0,
+    "total_due": 0,  # agar due_amount naam ka field nahi hai to calculate manually
+    "last_transaction": expenses.latest('date').date.strftime("%d %B %Y") if expenses.exists() else "N/A"
+}
+
+
+        return Response(summary)
+
+
+from .models import Expense
+
+class FullTransactionHistoryAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        expenses = Expense.objects.filter(user=request.user).select_related('shop').order_by('-date')
+
+        transactions = []
+        for exp in expenses:
+            transactions.append({
+                "bill_id": f"{exp.date.strftime('%Y%m%d')}{exp.id}",
+                "shop_name": exp.shop.name if exp.shop else "N/A",
+                "date": exp.date.strftime("%d %B %Y"),
+                "amount": float(exp.paying_amount),
+
+                "paid": float(exp.paid_amount),
+                "due": float(exp.due_amount),
+                "status": "Paid" if exp.due_amount == 0 else "Partial Paid" if exp.paid_amount > 0 else "Unpaid"
+            })
+
+        return Response(transactions)
