@@ -26,3 +26,7 @@ class DetailedSaleSerializer(serializers.ModelSerializer):
         validated_data['net_income'] = net_income
 
         return super().create(validated_data)
+
+
+
+

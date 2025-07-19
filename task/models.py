@@ -15,7 +15,7 @@ class Task(models.Model):
         ('Maintenance', 'Maintenance'),
         ('Other', 'Other'),
     ]
-    REPEAT_CHOICES = [('None', 'None'), ('Daily', 'Daily'), ('Weekly', 'Weekly'), ('Custom', 'Custom')]
+    # REPEAT_CHOICES = [('None', 'None'), ('Daily', 'Daily'), ('Weekly', 'Weekly'), ('Custom', 'Custom')]
 
     
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)

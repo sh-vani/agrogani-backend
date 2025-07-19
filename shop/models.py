@@ -16,3 +16,19 @@ class Shop(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.user})"
+
+
+
+class Buyer(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    name = models.CharField(max_length=100)
+    mobile = models.CharField(max_length=15)
+    market_location = models.CharField(max_length=100)
+    note = models.TextField(blank=True, null=True)  # ✅ Optional field
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.name} ({self.market_location})"
+
+
+
