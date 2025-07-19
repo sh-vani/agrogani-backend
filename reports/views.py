@@ -302,7 +302,7 @@ class IncomeSourcesAPIView(APIView):
 
         detailed_sale = DetailedSale.objects.filter(
             user=user, sale_date__range=[start_date, end_date]
-        ).aggregate(total=Sum('total_sale_amount'))['total_sale_amount'] or 0
+        ).aggregate(total=Sum('total_sale_amount'))['total'] or 0
 
         product_sale = quick_sale + detailed_sale
 
@@ -355,7 +355,7 @@ class ExpenseBreakdownAPIView(APIView):
         for category in categories:
             amount = Expense.objects.filter(
                 user=user,
-                category__iexact=category,
+                expense_type =category,
                 date__range=[start_date, end_date]
             ).aggregate(total=Sum('paying_amount'))['total'] or 0
 
