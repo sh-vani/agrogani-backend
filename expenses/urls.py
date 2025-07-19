@@ -13,4 +13,11 @@ urlpatterns = [
 ]
 
 
+from django.urls import path
+from .views import OverallLedgerSummaryAPIView, FullTransactionHistoryAPIView
+
+urlpatterns = [
+    path('shop/ledger/summary/', OverallLedgerSummaryAPIView.as_view(), name='ledger-summary'),
+    path('shop/ledger/history/', FullTransactionHistoryAPIView.as_view(), name='ledger-history'),
+]
 
