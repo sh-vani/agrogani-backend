@@ -23,6 +23,6 @@ from rest_framework import serializers
 from django.utils import timezone
 
 class DashboardHeaderSerializer(serializers.Serializer):
-    name = serializers.CharField()
+    full_name= serializers.CharField()
     date = serializers.CharField()
     time = serializers.CharField()
