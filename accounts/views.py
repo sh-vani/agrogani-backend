@@ -214,7 +214,7 @@ def dashboard_header(request):
     now = timezone.now()
     user = request.user
     data = {
-        "name": user.get_full_name() or user.username,
+        "name": user.full_name() or user.username,
         "date": now.strftime("%A, %B %d, %Y"),
         "time": now.strftime("%I:%M %p"),
     }
