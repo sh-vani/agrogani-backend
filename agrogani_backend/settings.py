@@ -69,7 +69,7 @@ INSTALLED_APPS = [
      'userprofile',
       'plan',
       'device',
-      'weather',
+   
       'crop',
       'labour',
       'expenses',
