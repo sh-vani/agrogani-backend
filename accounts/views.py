@@ -207,13 +207,18 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.utils import timezone
 from .serializers import DashboardHeaderSerializer
+
+from django.utils import timezone
+import pytz
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def dashboard_header(request):
-    now = timezone.now()
+    ist = pytz.timezone('Asia/Kolkata')  # IST timezone
+    now = timezone.now().astimezone(ist)
     user = request.user
     data = {
-        "full_name": user.full_name or user.username,  # Fixed key name
+        "full_name": user.full_name or user.username,
         "date": now.strftime("%A, %B %d, %Y"),
         "time": now.strftime("%I:%M %p"),
     }

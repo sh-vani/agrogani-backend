@@ -280,7 +280,7 @@ from .models import DetailedSale
 from .permissions import IsPaidMember
 
 class BuyerLedgerSummaryAPIView(APIView):
-    permission_classes = [permissions.IsAuthenticated, IsPaidMember]
+    # permission_classes = [permissions.IsAuthenticated, IsPaidMember]
 
     def get(self, request):
         user = request.user
@@ -328,7 +328,7 @@ from .models import DetailedSale
 from .permissions import IsPaidMember
 
 class CropChartDataAPIView(APIView):
-    permission_classes = [permissions.IsAuthenticated, IsPaidMember]
+    # permission_classes = [permissions.IsAuthenticated, IsPaidMember]
 
     def get(self, request):
         user = request.user

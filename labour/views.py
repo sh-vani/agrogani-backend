@@ -2,7 +2,7 @@
 from rest_framework import generics, permissions
 from .models import Labour, Attendance
 # Payment
-from .serializers import LabourSerializer, AttendanceSerializer
+from .serializers import LabourSerializer
 # , PaymentSerializer
 from rest_framework.response import Response
 from rest_framework import status
@@ -65,38 +65,42 @@ class LabourDeleteView(generics.DestroyAPIView):
 
 # labout Attendence 
 
+from rest_framework import generics
+from .models import Attendance
+from .serializers import (
+    AttendanceListSerializer, AttendanceCreateUpdateSerializer
+)
 
-class AttendanceListView(generics.ListAPIView):
-    serializer_class = AttendanceSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_queryset(self):
-        return Attendance.objects.filter(labour__user=self.request.user)
-
+# 📥 Create
 class AttendanceCreateView(generics.CreateAPIView):
-    serializer_class = AttendanceSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    queryset = Attendance.objects.all()
+    serializer_class = AttendanceCreateUpdateSerializer
+ 
+# 📃 List
+class AttendanceListView(generics.ListAPIView):
+    queryset = Attendance.objects.select_related('labour').all()
+    serializer_class = AttendanceListSerializer
 
-class AttendanceRetrieveView(generics.RetrieveAPIView):
-    serializer_class = AttendanceSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_queryset(self):
-        return Attendance.objects.filter(labour__user=self.request.user)
-
+# 🔄 Update
 class AttendanceUpdateView(generics.UpdateAPIView):
-    serializer_class = AttendanceSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    queryset = Attendance.objects.all()
+    serializer_class = AttendanceCreateUpdateSerializer
 
-    def get_queryset(self):
-        return Attendance.objects.filter(labour__user=self.request.user)
-
+# ❌ Delete
 class AttendanceDeleteView(generics.DestroyAPIView):
-    serializer_class = AttendanceSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    queryset = Attendance.objects.all()
+    serializer_class = AttendanceCreateUpdateSerializer
 
-    def get_queryset(self):
-        return Attendance.objects.filter(labour__user=self.request.user)
+# 🔍 Retrieve (Optional)
+class AttendanceRetrieveView(generics.RetrieveAPIView):
+    queryset = Attendance.objects.select_related('labour').all()
+    serializer_class = AttendanceListSerializer
+
+
+
+
+
+
 
 # payment 
 

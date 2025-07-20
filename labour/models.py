@@ -24,12 +24,3 @@ class Attendance(models.Model):
 
     def __str__(self):
         return f"{self.labour.name} - {self.date} - {self.status}"
-
-# class Payment(models.Model):
-#     labour = models.ForeignKey(Labour, on_delete=models.CASCADE, related_name='payments')
-#     date = models.DateField()
-#     amount = models.DecimalField(max_digits=10, decimal_places=2)
-#     remarks = models.TextField(blank=True, null=True)
-
-#     def __str__(self):
-#         return f"{self.labour.name} - {self.amount} on {self.date}"

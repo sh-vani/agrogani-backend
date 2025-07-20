@@ -2,6 +2,9 @@ from django.urls import path
 
 from .views import *
 
+
+
+
 urlpatterns = [
     # LABOUR
     path('labour/', LabourListView.as_view(), name='labour-list'),
@@ -16,6 +19,11 @@ urlpatterns = [
     path('attendance/<int:pk>/', AttendanceRetrieveView.as_view(), name='attendance-detail'),
     path('attendance/<int:pk>/update/', AttendanceUpdateView.as_view(), name='attendance-update'),
     path('attendance/<int:pk>/delete/', AttendanceDeleteView.as_view(), name='attendance-delete'),
+
+
+
+
+
 
     # PAYMENT
 #     path('payment/', PaymentListView.as_view(), name='payment-list'),
