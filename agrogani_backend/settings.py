@@ -253,3 +253,8 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 RAZORPAY_KEY_ID = "rzp_test_Wt9uDBVijEMhhU"
 RAZORPAY_KEY_SECRET = "TkpZXRLwI2vqBg8put1DBJCQ"
+
+
+from decouple import config
+WEATHER_API_KEY="be5a3a3aad7ded2bde2e15e8895c7cf7"
+

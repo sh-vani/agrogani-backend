@@ -37,7 +37,7 @@ urlpatterns = [
     path('api/userprofile/', include('userprofile.urls')),
     path('api/plan/', include('plan.urls')),
     path("api/device/", include("device.urls")),
-    path('api/weather/', include('weather.urls')),
+    # path('api/weather/', include('weather.urls')),
     path('api/crop/', include('crop.urls')),
      path('api/labour/', include('labour.urls')),
     path('api/expenses/', include('expenses.urls')),
