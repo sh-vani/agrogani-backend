@@ -10,6 +10,7 @@ class LabourSerializer(serializers.ModelSerializer):
         read_only_fields = ['user']
 
 class AttendanceSerializer(serializers.ModelSerializer):
+    labour = LabourSerializer(read_only=True)  # 👈 this nests the full labour details
     class Meta:
         model = Attendance
         fields = '__all__'
