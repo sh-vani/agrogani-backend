@@ -9,10 +9,10 @@ urlpatterns = [
     path('summary/', SummaryAPIView.as_view(), name='report-summary'),
     path('report/crop-wise/', CropWiseReportAPIView.as_view(), name='report-crop-wise'),
     path('report/crop/<int:crop_id>/details/', CropDetailReportAPIView.as_view(), name='report-crop-details'),
-        path('report/trends/', MonthlyTrendsAPIView.as_view(), name='report-trends'),
+    path('report/trends/', MonthlyTrendsAPIView.as_view(), name='report-trends'),
     
     path('report/income/', IncomeSourcesAPIView.as_view(), name='report-income'),
-       path('report/expenses/', ExpenseBreakdownAPIView.as_view(), name='report-expenses'),
+    path('report/expenses/', ExpenseBreakdownAPIView.as_view(), name='report-expenses'),
     #    path('report/export/pdf/', ExportReportPDFAPIView.as_view(), name='report-export-pdf'),
 ]
 

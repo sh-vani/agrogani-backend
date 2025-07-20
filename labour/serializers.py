@@ -3,21 +3,30 @@ from rest_framework import serializers
 from .models import Labour, Attendance
 # , Payment
 
+
 class LabourSerializer(serializers.ModelSerializer):
     class Meta:
         model = Labour
         fields = '__all__'
         read_only_fields = ['user']
 
-class AttendanceSerializer(serializers.ModelSerializer):
-    labour = LabourSerializer(read_only=True)  # 👈 this nests the full labour details
+
+from rest_framework import serializers
+from .models import Labour, Attendance
+
+class LabourSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Labour
+        fields = '__all__'
+
+class AttendanceListSerializer(serializers.ModelSerializer):
+    labour = LabourSerializer(read_only=True)
+
     class Meta:
         model = Attendance
         fields = '__all__'
 
-# class PaymentSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = Payment
-#         fields = '__all__'
-
-
+class AttendanceCreateUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Attendance
+        fields = '__all__'

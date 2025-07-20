@@ -26,12 +26,6 @@ from .serializers import TaskSerializer
 #             traceback.print_exc()
 #             return Response({"error": str(e)}, status=500)
 
-
-
-
-
-
-
 class AddTaskView(APIView):
     permission_classes = [IsAuthenticated]
 
