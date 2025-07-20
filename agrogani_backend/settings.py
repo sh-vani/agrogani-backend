@@ -79,6 +79,7 @@ INSTALLED_APPS = [
       'reports',
       'advisory',
        'rest_framework',
+        'django_extensions',
 
 ]
 
