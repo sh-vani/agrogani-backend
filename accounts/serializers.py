@@ -16,3 +16,13 @@ class SetPasswordSerializer(serializers.Serializer):
     email_or_mobile = serializers.CharField()
     password = serializers.CharField()
     confirm_password = serializers.CharField()
+
+
+
+from rest_framework import serializers
+from django.utils import timezone
+
+class DashboardHeaderSerializer(serializers.Serializer):
+    name = serializers.CharField()
+    date = serializers.CharField()
+    time = serializers.CharField()

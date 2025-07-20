@@ -202,3 +202,21 @@ class VerifyPaymentAPIView(generics.GenericAPIView):
 
 
 
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from django.utils import timezone
+from .serializers import DashboardHeaderSerializer
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def dashboard_header(request):
+    now = timezone.now()
+    user = request.user
+    data = {
+        "name": user.get_full_name() or user.username,
+        "date": now.strftime("%A, %B %d, %Y"),
+        "time": now.strftime("%I:%M %p"),
+    }
+    serializer = DashboardHeaderSerializer(data)
+    return Response(serializer.data)

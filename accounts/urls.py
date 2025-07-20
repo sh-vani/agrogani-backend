@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import RegisterView, VerifyOTPView, SetPasswordView,CreatePlanOrderAPIView, VerifyPaymentAPIView
+from .views import RegisterView, VerifyOTPView, SetPasswordView,CreatePlanOrderAPIView, VerifyPaymentAPIView,dashboard_header
 from .views import LoginView
 
 
@@ -13,6 +13,9 @@ urlpatterns = [
     path('create-plan-order/', CreatePlanOrderAPIView.as_view(), name='create-plan-order'),
     path('verify-payment/', VerifyPaymentAPIView.as_view(), name='verify-payment'),
 
+
+# dhashboar welcome
+path('header/', dashboard_header, name='dashboard-header'),
 ]
 
 
