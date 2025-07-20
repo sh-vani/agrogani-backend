@@ -48,7 +48,7 @@ urlpatterns = [
     path('api/sale/', include('sale.urls')),
     #  path('api/shop_ledger/',include('shop_ledger.urls')),
     path('api/Task/',include('task.urls')),
-    # path('api/advisory/',include('advisory.urls')),
+    path('api/advisory/',include('advisory.urls')),
 ] 
 
 

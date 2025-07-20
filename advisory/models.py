@@ -1,17 +1,14 @@
 from django.db import models
 
-# Create your models here.
-from django.db import models
-# from django.contrib.auth.models import User
-class Advisory(models.Model):
-    title = models.CharField(max_length=255)
-    message = models.TextField()
-    crop_type = models.CharField(max_length=100)
-    priority = models.CharField(max_length=20, choices=[('Low', 'Low'), ('Medium', 'Medium'), ('High', 'High')])
-    location = models.CharField(max_length=255)
-    # created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    verified = models.BooleanField(default=False)
+class Advisory(models.Model):  # Renamed from ImportantContact
+    name = models.CharField(max_length=100)
+    designation = models.CharField(max_length=100)
+    district = models.CharField(max_length=100)
+    specialization = models.CharField(max_length=100)
+    phone = models.CharField(max_length=20)
+    email = models.EmailField(blank=True, null=True)
+    office_address = models.CharField(max_length=255, blank=True, null=True)
+    timing = models.CharField(max_length=100, blank=True, null=True)
 
     def __str__(self):
-        return self.title
+        return self.name
