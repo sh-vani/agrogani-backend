@@ -77,6 +77,7 @@ INSTALLED_APPS = [
       'task',
       'shop',
       'reports',
+      'advisory',
        'rest_framework',
 
 ]
