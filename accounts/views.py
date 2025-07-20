@@ -219,3 +219,27 @@ def dashboard_header(request):
     }
     serializer = DashboardHeaderSerializer(data)
     return Response(serializer.data)
+
+
+
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from .serializers import WeatherSerializer
+from .services import fetch_weather_data
+
+class WeatherAPIView(APIView):
+    def get(self, request):
+        lat = request.GET.get("lat")
+        lon = request.GET.get("lon")
+
+        if not lat or not lon:
+            return Response({"error": "Missing location data"}, status=400)
+
+        weather_info = fetch_weather_data(lat, lon)
+
+        if "error" in weather_info:
+            return Response({"error": weather_info["error"]}, status=500)
+
+        serializer = WeatherSerializer(weather_info)
+        return Response(serializer.data)

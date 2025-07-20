@@ -26,3 +26,14 @@ class DashboardHeaderSerializer(serializers.Serializer):
     full_name= serializers.CharField()
     date = serializers.CharField()
     time = serializers.CharField()
+
+
+
+
+from rest_framework import serializers
+
+class WeatherSerializer(serializers.Serializer):
+    temperature = serializers.FloatField()
+    humidity = serializers.IntegerField()
+    condition = serializers.CharField()
+    wind = serializers.FloatField()
