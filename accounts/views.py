@@ -200,6 +200,110 @@ class VerifyPaymentAPIView(generics.GenericAPIView):
         return Response({"message": "Payment verified. Plan upgraded successfully."})
 
 
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from django.core.mail import send_mail
+from django.utils import timezone
+from random import randint
+from .models import User, OTP
+from .serializers import (
+    ForgotPasswordRequestSerializer,
+    ForgotPasswordVerifyOTPSerializer,
+    ResetPasswordSerializer
+)
+
+class ForgotPasswordRequestView(APIView):
+    def post(self, request):
+        serializer = ForgotPasswordRequestSerializer(data=request.data)
+        if serializer.is_valid():
+            identifier = serializer.validated_data.get('email_or_mobile')
+            user = User.objects.filter(email=identifier).first() or User.objects.filter(mobile=identifier).first()
+
+            if not user:
+                return Response({'detail': 'User not found.'}, status=404)
+
+            email_otp = str(randint(100000, 999999))
+            mobile_otp = str(randint(100000, 999999))
+
+            OTP.objects.update_or_create(
+                user=user,
+                defaults={'email_otp': email_otp, 'mobile_otp': mobile_otp, 'created_at': timezone.now()}
+            )
+
+            if user.email:
+                send_mail(
+                    'AgroGanit Password Reset OTP',
+                    f'Your OTP is {email_otp}',
+                    'yourmail@example.com',
+                    [user.email]
+                )
+            if user.mobile:
+                print(f'Mobile OTP: {mobile_otp}')  # Integrate SMS here
+
+            return Response({'detail': 'OTP sent successfully.'})
+        return Response(serializer.errors, status=400)
+
+class ForgotPasswordVerifyOTPView(APIView):
+    def post(self, request):
+        serializer = ForgotPasswordVerifyOTPSerializer(data=request.data)
+        if serializer.is_valid():
+            email = serializer.validated_data.get('email')
+            otp = serializer.validated_data.get('otp')
+
+            if not email:
+                return Response({'detail': 'Email is required for verification.'}, status=400)
+
+            try:
+                user = User.objects.get(email=email)
+                user_otp = OTP.objects.get(user=user)
+
+                if user_otp.email_otp == otp:
+                    user.is_otp_verified = True
+                    user.save()
+                    return Response({'detail': 'Email OTP verified successfully. You can now reset your password.'})
+                else:
+                    return Response({'detail': 'Invalid Email OTP.'}, status=400)
+            except User.DoesNotExist:
+                return Response({'detail': 'User not found.'}, status=404)
+            except OTP.DoesNotExist:
+                return Response({'detail': 'OTP not found.'}, status=404)
+        return Response(serializer.errors, status=400)
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+import traceback
+
+class ResetPasswordView(APIView):
+    def post(self, request):
+        try:
+            serializer = ResetPasswordSerializer(data=request.data)
+            if serializer.is_valid():
+                identifier = serializer.validated_data.get('email_or_mobile')
+                password = serializer.validated_data.get('password')
+                confirm_password = serializer.validated_data.get('confirm_password')
+
+                user = User.objects.filter(email=identifier).first()  # Only email allowed
+                if not user:
+                    return Response({'detail': 'User not found or mobile used instead of email.'}, status=404)
+
+                if not user.is_otp_verified:
+                    return Response({'detail': 'Email OTP not verified.'}, status=403)
+
+                if password != confirm_password:
+                    return Response({'detail': 'Passwords do not match.'}, status=400)
+
+                user.set_password(password)
+                user.is_otp_verified = False
+                user.save()
+
+                return Response({'detail': 'Password reset successful!'})
+            return Response(serializer.errors, status=400)
+
+        except Exception as e:
+            traceback.print_exc()  # Will print full error in terminal
+            return Response({'error': 'Internal Server Error: ' + str(e)}, status=500)
+
+
 
 
 from rest_framework.decorators import api_view, permission_classes
