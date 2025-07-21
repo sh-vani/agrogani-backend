@@ -38,6 +38,8 @@ class User(AbstractBaseUser):
     is_active = models.BooleanField(default=True)
     plan = models.ForeignKey(Plan, on_delete=models.SET_NULL, null=True, blank=True)
     date_joined = models.DateTimeField(default=timezone.now)
+    is_otp_verified = models.BooleanField(default=False)
+    
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['mobile', 'full_name']

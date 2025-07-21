@@ -37,3 +37,22 @@ class WeatherSerializer(serializers.Serializer):
     humidity = serializers.IntegerField()
     condition = serializers.CharField()
     wind = serializers.FloatField()
+
+
+
+
+
+class ForgotPasswordRequestSerializer(serializers.Serializer):
+    email_or_mobile = serializers.CharField()
+
+
+class ForgotPasswordVerifyOTPSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=False)
+    mobile = serializers.CharField(required=False)
+    otp = serializers.CharField()
+
+
+class ResetPasswordSerializer(serializers.Serializer):
+    email_or_mobile = serializers.CharField()
+    password = serializers.CharField()
+    confirm_password = serializers.CharField()
