@@ -56,3 +56,14 @@ class ResetPasswordSerializer(serializers.Serializer):
     email_or_mobile = serializers.CharField()
     password = serializers.CharField()
     confirm_password = serializers.CharField()
+
+
+
+# activeite recent
+from rest_framework import serializers
+from .models import UserActivity
+
+class UserActivitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserActivity
+        fields = ['action_type', 'description', 'timestamp']

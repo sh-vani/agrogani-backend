@@ -1,6 +1,7 @@
 from django.urls import path
 from .views import RegisterView, VerifyOTPView, SetPasswordView,CreatePlanOrderAPIView, VerifyPaymentAPIView,dashboard_header
-from .views import LoginView,WeatherAPIView,ForgotPasswordRequestView,ForgotPasswordVerifyOTPView,ResetPasswordView
+from .views import LoginView,WeatherAPIView,ForgotPasswordRequestView,ForgotPasswordVerifyOTPView,ResetPasswordView,RecentActivityView
+# recent_user_activities
 
 
 urlpatterns = [
@@ -16,14 +17,20 @@ urlpatterns = [
 
 # razorpay path
     path('create-plan-order/', CreatePlanOrderAPIView.as_view(), name='create-plan-order'),
-    path('verify-payment/', VerifyPaymentAPIView.as_view(), name='verify-payment'),
+    # path('verify-payment/', VerifyPaymentAPIView.as_view(), name='verify-payment'),
 
 
 # dhashboar welcome
-path('header/', dashboard_header, name='dashboard-header'),
+     path('header/', dashboard_header, name='dashboard-header'),
+     path("weather/", WeatherAPIView.as_view(), name="weather-api"),
+    #  path('recent-activities/', RecentActivityView, name='recent_activities'),
+    
 
-path("weather/", WeatherAPIView.as_view(), name="weather-api")
+
+    path('recent-activities/', RecentActivityView.as_view(), name='recent_activities'),
+
+
+
 ]
-
 
 

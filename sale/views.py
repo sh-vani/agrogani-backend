@@ -280,14 +280,15 @@ from .models import DetailedSale
 from .permissions import IsPaidMember
 
 class BuyerLedgerSummaryAPIView(APIView):
-    # permission_classes = [permissions.IsAuthenticated, IsPaidMember]
+    # permission_classes = [permissions.IsAuthenticated, IsPaidMember]\
+
 
     def get(self, request):
         user = request.user
         sales = DetailedSale.objects.filter(user=user)
 
-        if not sales.exists():
-            return Response({"message": "No sales found"}, status=404)
+        if not sales.exists(): 
+         return Response({"message": "No sales found"}, status=404)
 
         total_sale = 0
         total_received = 0

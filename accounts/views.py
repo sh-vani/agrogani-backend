@@ -352,3 +352,25 @@ class WeatherAPIView(APIView):
 
         serializer = WeatherSerializer(weather_info)
         return Response(serializer.data)
+
+
+
+
+
+
+
+# actuve log
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from .models import UserActivity
+from .serializers import UserActivitySerializer
+
+class RecentActivityView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        activities = UserActivity.objects.filter(user=request.user)[:5]
+        serializer = UserActivitySerializer(activities, many=True)
+        return Response(serializer.data)

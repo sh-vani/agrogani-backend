@@ -15,3 +15,18 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'push_notification', 'advisory_alert',
             'auto_backup', 'share_on_whatsapp'
         ]
+
+
+
+from rest_framework import serializers
+from .models import UserProfile
+
+class UserProfileUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserProfile
+        fields = [
+            #   'full_name', 'email', 'mobile', 'plan',
+            'location', 'language', 'timezone',
+            'push_notification', 'advisory_alert',
+            'auto_backup', 'share_on_whatsapp'
+        ]
