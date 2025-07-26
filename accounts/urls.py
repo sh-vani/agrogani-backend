@@ -13,7 +13,7 @@ urlpatterns = [
   path('forgot-password/', ForgotPasswordRequestView.as_view(), name='forgot-password'),
     path('forgot/verify-otp/', ForgotPasswordVerifyOTPView.as_view(), name='forgot-password-verify-otp'),
     path('reset-password/', ResetPasswordView.as_view(), name='reset-password'),
-# 
+
 
 # razorpay path
     path('create-plan-order/', CreatePlanOrderAPIView.as_view(), name='create-plan-order'),
@@ -23,7 +23,7 @@ urlpatterns = [
 # dhashboar welcome
      path('header/', dashboard_header, name='dashboard-header'),
      path("weather/", WeatherAPIView.as_view(), name="weather-api"),
-    #  path('recent-activities/', RecentActivityView, name='recent_activities'),
+
     
 
 

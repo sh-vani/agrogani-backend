@@ -1,70 +1,3 @@
-# from rest_framework.views import APIView
-# from rest_framework.response import Response
-# from rest_framework.permissions import IsAuthenticated
-# from .permissions import IsPaidMember
-# from sale.models import QuickSale, DetailedSale
-# from expenses.models import Expense
-# # from income.models import Subsidy, OtherIncome
-# from django.db.models import Sum
-# from datetime import datetime
-# from django.utils.dateparse import parse_date
-
-# class SummaryAPIView(APIView):
-#     permission_classes = [IsAuthenticated, IsPaidMember]
-
-#     def get(self, request):
-#         user = request.user
-#         month = request.query_params.get('month')
-#         year = request.query_params.get('year')
-
-#         today = datetime.today()
-#         month = int(month) if month else today.month
-#         year = int(year) if year else today.year
-
-#         # Date range
-#         start_date = datetime(year, month, 1).date()
-#         end_date = today.date() if month == today.month else datetime(year, month + 1, 1).date()
-
-#         # Revenue
-#         quick_sale = QuickSale.objects.filter(
-#             user=user, created_at__date__range=[start_date, end_date]
-#         ).aggregate(total=Sum('amount'))['total'] or 0
-
-#         detailed_sale = DetailedSale.objects.filter(
-#             user=user, sale_date__range=[start_date, end_date]
-#         ).aggregate(total=Sum('total_sale_amount'))['total'] or 0
-
-
-
-
-
-#         # subsidy = Subsidy.objects.filter(
-#         #     user=user, date__range=[start_date, end_date]
-#         # ).aggregate(total=Sum('amount'))['total'] or 0
-
-#         # other_income = OtherIncome.objects.filter(
-#         #     user=user, date__range=[start_date, end_date]
-#         # ).aggregate(total=Sum('amount'))['total'] or 0
-
-#         total_revenue = quick_sale + detailed_sale 
-
-#         # Expenses
-#         total_expense = Expense.objects.filter(
-#             user=user, date__range=[start_date, end_date]
-#         ).aggregate(total=Sum('paying_amount'))['total'] or 0
-
-#         # Profit
-#         profit = total_revenue - total_expense
-
-#         return Response({
-#             "month": month,
-#             "year": year,
-#             "total_revenue": round(total_revenue, 2),
-#             "total_expense": round(total_expense, 2),
-#             "profit": round(profit, 2)
-#         })
-
-
 
 
 from rest_framework.views import APIView
@@ -149,6 +82,70 @@ class SummaryAPIView(APIView):
         })
 
 
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from .permissions import IsPaidMember
+from crop.models import Crop
+from sale.models import QuickSale, DetailedSale
+from expenses.models import Expense
+from django.db.models import Sum
+
+
+
+
+class CropWiseReportAPIView(APIView):
+    permission_classes = [IsAuthenticated, IsPaidMember]
+
+    def get(self, request):
+        user = request.user
+        crops = Crop.objects.filter(user=user)
+        report = []
+
+        for crop in crops:
+            crop_name = crop.crop_name
+
+            # Revenue from QuickSale
+            quick_sale = QuickSale.objects.filter(
+                user=user,
+                crop_name__iexact=crop_name
+            ).aggregate(total=Sum('amount'))['total'] or 0
+
+            # Revenue from DetailedSale (loop through JSONField)
+            detailed_sale_total = 0
+            detailed_sales = DetailedSale.objects.filter(user=user)
+            for sale in detailed_sales:
+                for item in sale.crops:
+                    if item.get("crop_name", "").lower() == crop_name.lower():
+                        detailed_sale_total += item.get("total_amount", 0)
+
+            revenue = quick_sale + detailed_sale_total
+
+            # Investment from Expense
+            investment = Expense.objects.filter(
+                user=user,
+                crop_name__iexact=crop_name
+            ).aggregate(total=Sum('paying_amount'))['total'] or 0
+
+            # Profit & ROI
+            profit = revenue - investment
+            roi = round((profit / investment) * 100, 2) if investment > 0 else 0
+
+            report.append({
+                "crop_name": crop.crop_name,
+                "field_name": crop.field_name,
+                "field_size": f"{crop.field_size} {crop.field_unit}",
+                "crop_type": crop.crop_type,
+                "investment": round(investment, 2),
+                "revenue": round(revenue, 2),
+                "profit": round(profit, 2),
+                "roi": roi
+            })
+
+        return Response(report)
+
+
+
 # from rest_framework.views import APIView
 # from rest_framework.response import Response
 # from rest_framework.permissions import IsAuthenticated
@@ -185,11 +182,11 @@ class SummaryAPIView(APIView):
 
 #             revenue = quick_sale + detailed_sale_total
 
-#             # Investment from Expense
+#             # ✅ Fixed: Investment from Expense
 #             investment = Expense.objects.filter(
 #                 user=user,
-#                 crop_name__iexact=crop_name
-#             ).aggregate(total=Sum('paying_amount'))['total'] or 0
+#                 crop__crop_name__iexact=crop_name  # Corrected field lookup
+#             ).aggregate(total=Sum('amount'))['total'] or 0
 
 #             # Profit & ROI
 #             profit = revenue - investment
@@ -207,67 +204,6 @@ class SummaryAPIView(APIView):
 #             })
 
 #         return Response(report)
-
-
-
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from .permissions import IsPaidMember
-from crop.models import Crop
-from sale.models import QuickSale, DetailedSale
-from expenses.models import Expense
-from django.db.models import Sum
-
-class CropWiseReportAPIView(APIView):
-    permission_classes = [IsAuthenticated, IsPaidMember]
-
-    def get(self, request):
-        user = request.user
-        crops = Crop.objects.filter(user=user)
-        report = []
-
-        for crop in crops:
-            crop_name = crop.crop_name
-
-            # Revenue from QuickSale
-            quick_sale = QuickSale.objects.filter(
-                user=user,
-                crop_name__iexact=crop_name
-            ).aggregate(total=Sum('amount'))['total'] or 0
-
-            # Revenue from DetailedSale (loop through JSONField)
-            detailed_sale_total = 0
-            detailed_sales = DetailedSale.objects.filter(user=user)
-            for sale in detailed_sales:
-                for item in sale.crops:
-                    if item.get("crop_name", "").lower() == crop_name.lower():
-                        detailed_sale_total += item.get("total_amount", 0)
-
-            revenue = quick_sale + detailed_sale_total
-
-            # ✅ Fixed: Investment from Expense
-            investment = Expense.objects.filter(
-                user=user,
-                crop__crop_name__iexact=crop_name  # Corrected field lookup
-            ).aggregate(total=Sum('amount'))['total'] or 0
-
-            # Profit & ROI
-            profit = revenue - investment
-            roi = round((profit / investment) * 100, 2) if investment > 0 else 0
-
-            report.append({
-                "crop_name": crop.crop_name,
-                "field_name": crop.field_name,
-                "field_size": f"{crop.field_size} {crop.field_unit}",
-                "crop_type": crop.crop_type,
-                "investment": round(investment, 2),
-                "revenue": round(revenue, 2),
-                "profit": round(profit, 2),
-                "roi": roi
-            })
-
-        return Response(report)
 
 
 
