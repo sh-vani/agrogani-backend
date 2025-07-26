@@ -17,7 +17,7 @@ urlpatterns = [
 
 # razorpay path
     path('create-plan-order/', CreatePlanOrderAPIView.as_view(), name='create-plan-order'),
-    # path('verify-payment/', VerifyPaymentAPIView.as_view(), name='verify-payment'),
+    path('verify-payment/', VerifyPaymentAPIView.as_view(), name='verify-payment'),
 
 
 # dhashboar welcome
