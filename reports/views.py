@@ -122,10 +122,13 @@ class CropWiseReportAPIView(APIView):
             revenue = quick_sale + detailed_sale_total
 
             # Investment from Expense
+          
+
             investment = Expense.objects.filter(
-                user=user,
-                crop_name__iexact=crop_name
-            ).aggregate(total=Sum('paying_amount'))['total'] or 0
+    user=user,
+    crop__crop_name__iexact=crop_name
+).aggregate(total=Sum('paying_amount'))['total'] or 0
+
 
             # Profit & ROI
             profit = revenue - investment
