@@ -1,13 +1,82 @@
+# from rest_framework.views import APIView
+# from rest_framework.response import Response
+# from rest_framework.permissions import IsAuthenticated
+# from .permissions import IsPaidMember
+# from sale.models import QuickSale, DetailedSale
+# from expenses.models import Expense
+# # from income.models import Subsidy, OtherIncome
+# from django.db.models import Sum
+# from datetime import datetime
+# from django.utils.dateparse import parse_date
+
+# class SummaryAPIView(APIView):
+#     permission_classes = [IsAuthenticated, IsPaidMember]
+
+#     def get(self, request):
+#         user = request.user
+#         month = request.query_params.get('month')
+#         year = request.query_params.get('year')
+
+#         today = datetime.today()
+#         month = int(month) if month else today.month
+#         year = int(year) if year else today.year
+
+#         # Date range
+#         start_date = datetime(year, month, 1).date()
+#         end_date = today.date() if month == today.month else datetime(year, month + 1, 1).date()
+
+#         # Revenue
+#         quick_sale = QuickSale.objects.filter(
+#             user=user, created_at__date__range=[start_date, end_date]
+#         ).aggregate(total=Sum('amount'))['total'] or 0
+
+#         detailed_sale = DetailedSale.objects.filter(
+#             user=user, sale_date__range=[start_date, end_date]
+#         ).aggregate(total=Sum('total_sale_amount'))['total'] or 0
+
+
+
+
+
+#         # subsidy = Subsidy.objects.filter(
+#         #     user=user, date__range=[start_date, end_date]
+#         # ).aggregate(total=Sum('amount'))['total'] or 0
+
+#         # other_income = OtherIncome.objects.filter(
+#         #     user=user, date__range=[start_date, end_date]
+#         # ).aggregate(total=Sum('amount'))['total'] or 0
+
+#         total_revenue = quick_sale + detailed_sale 
+
+#         # Expenses
+#         total_expense = Expense.objects.filter(
+#             user=user, date__range=[start_date, end_date]
+#         ).aggregate(total=Sum('paying_amount'))['total'] or 0
+
+#         # Profit
+#         profit = total_revenue - total_expense
+
+#         return Response({
+#             "month": month,
+#             "year": year,
+#             "total_revenue": round(total_revenue, 2),
+#             "total_expense": round(total_expense, 2),
+#             "profit": round(profit, 2)
+#         })
+
+
+
+
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from .permissions import IsPaidMember
 from sale.models import QuickSale, DetailedSale
 from expenses.models import Expense
-# from income.models import Subsidy, OtherIncome
 from django.db.models import Sum
 from datetime import datetime
-from django.utils.dateparse import parse_date
+from dateutil.relativedelta import relativedelta
+from calendar import month_name
 
 class SummaryAPIView(APIView):
     permission_classes = [IsAuthenticated, IsPaidMember]
@@ -21,11 +90,10 @@ class SummaryAPIView(APIView):
         month = int(month) if month else today.month
         year = int(year) if year else today.year
 
-        # Date range
+        # Current month summary
         start_date = datetime(year, month, 1).date()
         end_date = today.date() if month == today.month else datetime(year, month + 1, 1).date()
 
-        # Revenue
         quick_sale = QuickSale.objects.filter(
             user=user, created_at__date__range=[start_date, end_date]
         ).aggregate(total=Sum('amount'))['total'] or 0
@@ -34,34 +102,50 @@ class SummaryAPIView(APIView):
             user=user, sale_date__range=[start_date, end_date]
         ).aggregate(total=Sum('total_sale_amount'))['total'] or 0
 
+        total_revenue = quick_sale + detailed_sale
 
-
-
-
-        # subsidy = Subsidy.objects.filter(
-        #     user=user, date__range=[start_date, end_date]
-        # ).aggregate(total=Sum('amount'))['total'] or 0
-
-        # other_income = OtherIncome.objects.filter(
-        #     user=user, date__range=[start_date, end_date]
-        # ).aggregate(total=Sum('amount'))['total'] or 0
-
-        total_revenue = quick_sale + detailed_sale 
-
-        # Expenses
         total_expense = Expense.objects.filter(
             user=user, date__range=[start_date, end_date]
         ).aggregate(total=Sum('paying_amount'))['total'] or 0
 
-        # Profit
         profit = total_revenue - total_expense
+
+        # Last 12 months graph data
+        graph_data = []
+        for i in range(12):
+            ref_date = today - relativedelta(months=11 - i)
+            m_start = datetime(ref_date.year, ref_date.month, 1).date()
+            m_end = (m_start + relativedelta(months=1))
+
+            q_sale = QuickSale.objects.filter(
+                user=user, created_at__date__range=[m_start, m_end]
+            ).aggregate(total=Sum('amount'))['total'] or 0
+
+            d_sale = DetailedSale.objects.filter(
+                user=user, sale_date__range=[m_start, m_end]
+            ).aggregate(total=Sum('total_sale_amount'))['total'] or 0
+
+            revenue = q_sale + d_sale
+
+            expense = Expense.objects.filter(
+                user=user, date__range=[m_start, m_end]
+            ).aggregate(total=Sum('paying_amount'))['total'] or 0
+
+            graph_data.append({
+                "month": month_name[m_start.month],
+                "year": m_start.year,
+                "revenue": round(revenue, 2),
+                "expenses": round(expense, 2),
+                "profit": round(revenue - expense, 2)
+            })
 
         return Response({
             "month": month,
             "year": year,
             "total_revenue": round(total_revenue, 2),
             "total_expense": round(total_expense, 2),
-            "profit": round(profit, 2)
+            "profit": round(profit, 2),
+            "graph_data": graph_data
         })
 
 
@@ -322,10 +406,6 @@ class IncomeSourcesAPIView(APIView):
             # { "source": "Other Income", "amount": round(other_income, 2) }
         ])
 
-
-
-
-
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -369,92 +449,18 @@ class ExpenseBreakdownAPIView(APIView):
 
         return Response(breakdown)
 
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from django.db.models import Sum
-from datetime import datetime
-from calendar import monthrange
-from expenses.models import Expense
-from sale.models import DetailedSale, QuickSale
 
-class FinancialSummaryView(APIView):
-    permission_classes = [IsAuthenticated]
 
-    def calculate_percentage_change(self, current, previous):
-        if previous == 0:
-            return None
-        return round(((current - previous) / previous) * 100, 2)
 
-    def get_revenue(self, user, start_date, end_date):
-        # Revenue from DetailedSale
-        detailed_qs = DetailedSale.objects.filter(user=user, date__range=[start_date, end_date])
-        detailed_revenue = sum(s.quantity_kg * s.rate_per_kg for s in detailed_qs)
 
-        # Revenue from QuickSale
-        quick_qs = QuickSale.objects.filter(user=user, date__range=[start_date, end_date])
-        quick_revenue = sum(s.quantity_kg * s.rate_per_kg for s in quick_qs)
 
-        return detailed_revenue + quick_revenue
 
-    def get_yearly_totals(self, user, year):
-        start_date = datetime(year, 1, 1)
-        end_date = datetime(year, 12, 31)
 
-        revenue = self.get_revenue(user, start_date, end_date)
 
-        expenses = Expense.objects.filter(user=user, date__range=[start_date, end_date])\
-                                  .aggregate(total=Sum('amount'))['total'] or 0
 
-        profit = revenue - expenses
-        return revenue, expenses, profit
 
-    def get_monthly_data(self, user, year):
-        monthly_data = []
-        for month in range(1, 13):
-            start_date = datetime(year, month, 1)
-            end_day = monthrange(year, month)[1]
-            end_date = datetime(year, month, end_day)
 
-            revenue = self.get_revenue(user, start_date, end_date)
 
-            expenses = Expense.objects.filter(user=user, date__range=[start_date, end_date])\
-                                      .aggregate(total=Sum('amount'))['total'] or 0
-
-            profit = revenue - expenses
-
-            monthly_data.append({
-                "month": start_date.strftime("%b"),
-                "revenue": round(revenue, 2),
-                "expenses": round(expenses, 2),
-                "profit": round(profit, 2)
-            })
-        return monthly_data
-
-    def get(self, request):
-        user = request.user
-        year = datetime.now().year
-        previous_year = year - 1
-
-        monthly_data = self.get_monthly_data(user, year)
-
-        curr_revenue, curr_expenses, curr_profit = self.get_yearly_totals(user, year)
-        prev_revenue, prev_expenses, prev_profit = self.get_yearly_totals(user, previous_year)
-
-        summary = {
-            "revenue": round(curr_revenue, 2),
-            "expenses": round(curr_expenses, 2),
-            "profit": round(curr_profit, 2),
-            "growth_rate": f"{self.calculate_percentage_change(curr_profit, prev_profit)}%" if prev_profit else "N/A",
-            "revenue_change": f"{self.calculate_percentage_change(curr_revenue, prev_revenue)}%" if prev_revenue else "N/A",
-            "expenses_change": f"{self.calculate_percentage_change(curr_expenses, prev_expenses)}%" if prev_expenses else "N/A",
-            "profit_change": f"{self.calculate_percentage_change(curr_profit, prev_profit)}%" if prev_profit else "N/A"
-        }
-
-        return Response({
-            "summary": summary,
-            "monthly_data": monthly_data
-        })
 
 
 # from django.template.loader import get_template
