@@ -6,7 +6,6 @@ from accounts.models import User  # या जहाँ तुम्हारा
 
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
-  
     location = models.CharField(max_length=255, null=True, blank=True)
     language = models.CharField(max_length=50, default='English')
     timezone = models.CharField(max_length=50, default='Asia/Kolkata')

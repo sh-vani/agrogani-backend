@@ -177,3 +177,11 @@ class TaskSummaryView(APIView):
             "pending": pending,
             "priority_breakdown": priority_count
         })
+
+
+
+from accounts.utils import log_activity
+
+def add_expense(request):
+    ...
+    log_activity(request.user, 'expense', f"Added Fertilizer expense ₹120.50")

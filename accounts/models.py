@@ -78,6 +78,65 @@ class RazorpayLog(models.Model):
     amount = models.FloatField()
     created_at = models.DateTimeField(auto_now_add=True)
 
+
+
+
+ 
+# Actvity lo
+
+
+
+# class UserActivity(models.Model):
+#     user = models.ForeignKey(User, on_delete=models.CASCADE)
+#     action_type = models.CharField(max_length=100)
+#     description = models.TextField()
+#     timestamp = models.DateTimeField(auto_now_add=True)
+
+
+
+from django.db import models
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
+class UserActivity(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    action_type = models.CharField(max_length=100)  # e.g., 'irrigation', 'expense', 'task'
+    description = models.TextField()
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-timestamp']
+
+    def __str__(self):
+        return f"{self.user} - {self.action_type} - {self.timestamp}"
+
+
+
+
+
+
+# from django.db import models
+# from django.conf import settings
+
+
+
+
+# class ActivityLog(models.Model):
+   
+#     user = models.ForeignKey(
+#         settings.AUTH_USER_MODEL,  # ✅ This should be used
+#         on_delete=models.CASCADE,
+#         related_name='activity_logs'
+#     )
+#     activity_type = models.CharField(max_length=100)  # You can skip choices for flexibility
+#     description = models.TextField()
+#     timestamp = models.DateTimeField(auto_now_add=True)
+#     related_data = models.JSONField(null=True, blank=True)  # Store dynamic key-value info
+
+#     def __str__(self):
+#         return f"{self.user.username} - {self.activity_type}"
+
 # from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 # from django.db import models
 # from django.utils import timezone

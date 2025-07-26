@@ -369,6 +369,92 @@ class ExpenseBreakdownAPIView(APIView):
 
         return Response(breakdown)
 
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from django.db.models import Sum
+from datetime import datetime
+from calendar import monthrange
+from expenses.models import Expense
+from sale.models import DetailedSale, QuickSale
+
+class FinancialSummaryView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def calculate_percentage_change(self, current, previous):
+        if previous == 0:
+            return None
+        return round(((current - previous) / previous) * 100, 2)
+
+    def get_revenue(self, user, start_date, end_date):
+        # Revenue from DetailedSale
+        detailed_qs = DetailedSale.objects.filter(user=user, date__range=[start_date, end_date])
+        detailed_revenue = sum(s.quantity_kg * s.rate_per_kg for s in detailed_qs)
+
+        # Revenue from QuickSale
+        quick_qs = QuickSale.objects.filter(user=user, date__range=[start_date, end_date])
+        quick_revenue = sum(s.quantity_kg * s.rate_per_kg for s in quick_qs)
+
+        return detailed_revenue + quick_revenue
+
+    def get_yearly_totals(self, user, year):
+        start_date = datetime(year, 1, 1)
+        end_date = datetime(year, 12, 31)
+
+        revenue = self.get_revenue(user, start_date, end_date)
+
+        expenses = Expense.objects.filter(user=user, date__range=[start_date, end_date])\
+                                  .aggregate(total=Sum('amount'))['total'] or 0
+
+        profit = revenue - expenses
+        return revenue, expenses, profit
+
+    def get_monthly_data(self, user, year):
+        monthly_data = []
+        for month in range(1, 13):
+            start_date = datetime(year, month, 1)
+            end_day = monthrange(year, month)[1]
+            end_date = datetime(year, month, end_day)
+
+            revenue = self.get_revenue(user, start_date, end_date)
+
+            expenses = Expense.objects.filter(user=user, date__range=[start_date, end_date])\
+                                      .aggregate(total=Sum('amount'))['total'] or 0
+
+            profit = revenue - expenses
+
+            monthly_data.append({
+                "month": start_date.strftime("%b"),
+                "revenue": round(revenue, 2),
+                "expenses": round(expenses, 2),
+                "profit": round(profit, 2)
+            })
+        return monthly_data
+
+    def get(self, request):
+        user = request.user
+        year = datetime.now().year
+        previous_year = year - 1
+
+        monthly_data = self.get_monthly_data(user, year)
+
+        curr_revenue, curr_expenses, curr_profit = self.get_yearly_totals(user, year)
+        prev_revenue, prev_expenses, prev_profit = self.get_yearly_totals(user, previous_year)
+
+        summary = {
+            "revenue": round(curr_revenue, 2),
+            "expenses": round(curr_expenses, 2),
+            "profit": round(curr_profit, 2),
+            "growth_rate": f"{self.calculate_percentage_change(curr_profit, prev_profit)}%" if prev_profit else "N/A",
+            "revenue_change": f"{self.calculate_percentage_change(curr_revenue, prev_revenue)}%" if prev_revenue else "N/A",
+            "expenses_change": f"{self.calculate_percentage_change(curr_expenses, prev_expenses)}%" if prev_expenses else "N/A",
+            "profit_change": f"{self.calculate_percentage_change(curr_profit, prev_profit)}%" if prev_profit else "N/A"
+        }
+
+        return Response({
+            "summary": summary,
+            "monthly_data": monthly_data
+        })
 
 
 # from django.template.loader import get_template
