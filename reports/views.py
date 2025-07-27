@@ -93,6 +93,14 @@ from django.db.models import Sum
 
 
 
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from .permissions import IsPaidMember
+from crop.models import Crop
+from sale.models import QuickSale, DetailedSale
+from expenses.models import Expense
+from django.db.models import Sum
 
 class CropWiseReportAPIView(APIView):
     permission_classes = [IsAuthenticated, IsPaidMember]
@@ -108,27 +116,24 @@ class CropWiseReportAPIView(APIView):
             # Revenue from QuickSale
             quick_sale = QuickSale.objects.filter(
                 user=user,
-                crop_name__iexact=crop_name
+                crop_name__iexact=crop_name  # Assuming crop_name is a CharField in QuickSale
             ).aggregate(total=Sum('amount'))['total'] or 0
 
             # Revenue from DetailedSale (loop through JSONField)
             detailed_sale_total = 0
             detailed_sales = DetailedSale.objects.filter(user=user)
             for sale in detailed_sales:
-                for item in sale.crops:
+                for item in sale.crops:  # Assuming crops is a JSONField list of dicts
                     if item.get("crop_name", "").lower() == crop_name.lower():
                         detailed_sale_total += item.get("total_amount", 0)
 
             revenue = quick_sale + detailed_sale_total
 
-            # Investment from Expense
-          
-
+            # ✅ Fixed: Investment from Expense using ForeignKey to Crop
             investment = Expense.objects.filter(
-    user=user,
-    crop__crop_name__iexact=crop_name
-).aggregate(total=Sum('paying_amount'))['total'] or 0
-
+                user=user,
+                crop=crop  # Direct reference to the crop instance
+            ).aggregate(total=Sum('paying_amount'))['total'] or 0
 
             # Profit & ROI
             profit = revenue - investment
@@ -146,67 +151,6 @@ class CropWiseReportAPIView(APIView):
             })
 
         return Response(report)
-
-
-
-# from rest_framework.views import APIView
-# from rest_framework.response import Response
-# from rest_framework.permissions import IsAuthenticated
-# from .permissions import IsPaidMember
-# from crop.models import Crop
-# from sale.models import QuickSale, DetailedSale
-# from expenses.models import Expense
-# from django.db.models import Sum
-
-# class CropWiseReportAPIView(APIView):
-#     permission_classes = [IsAuthenticated, IsPaidMember]
-
-#     def get(self, request):
-#         user = request.user
-#         crops = Crop.objects.filter(user=user)
-#         report = []
-
-#         for crop in crops:
-#             crop_name = crop.crop_name
-
-#             # Revenue from QuickSale
-#             quick_sale = QuickSale.objects.filter(
-#                 user=user,
-#                 crop_name__iexact=crop_name
-#             ).aggregate(total=Sum('amount'))['total'] or 0
-
-#             # Revenue from DetailedSale (loop through JSONField)
-#             detailed_sale_total = 0
-#             detailed_sales = DetailedSale.objects.filter(user=user)
-#             for sale in detailed_sales:
-#                 for item in sale.crops:
-#                     if item.get("crop_name", "").lower() == crop_name.lower():
-#                         detailed_sale_total += item.get("total_amount", 0)
-
-#             revenue = quick_sale + detailed_sale_total
-
-#             # ✅ Fixed: Investment from Expense
-#             investment = Expense.objects.filter(
-#                 user=user,
-#                 crop__crop_name__iexact=crop_name  # Corrected field lookup
-#             ).aggregate(total=Sum('amount'))['total'] or 0
-
-#             # Profit & ROI
-#             profit = revenue - investment
-#             roi = round((profit / investment) * 100, 2) if investment > 0 else 0
-
-#             report.append({
-#                 "crop_name": crop.crop_name,
-#                 "field_name": crop.field_name,
-#                 "field_size": f"{crop.field_size} {crop.field_unit}",
-#                 "crop_type": crop.crop_type,
-#                 "investment": round(investment, 2),
-#                 "revenue": round(revenue, 2),
-#                 "profit": round(profit, 2),
-#                 "roi": roi
-#             })
-
-#         return Response(report)
 
 
 

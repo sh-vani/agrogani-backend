@@ -276,6 +276,64 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import permissions
 from collections import defaultdict
+from django.utils.timezone import localtime, now
+from datetime import timedelta
+from .models import DetailedSale
+from .permissions import IsPaidMember
+
+class BuyerLedgerDailyAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsPaidMember]
+
+    def get(self, request):
+        user = request.user
+        today = localtime(now()).date()
+        yesterday = today - timedelta(days=1)
+
+        def format_time(dt):
+            return localtime(dt).strftime("%I:%M %p")
+
+        def get_entries(date):
+            sales = DetailedSale.objects.filter(user=user, sale_date__date=date)
+            entries = []
+
+            for sale in sales:
+                buyer_name = sale.buyer_details.get("buyer_name", "Unknown")
+                paid_amount = sale.payment_details.get("paid_amount", 0)
+
+                if paid_amount > 0:
+                    entries.append({
+                        "type": "received",
+                        "amount": paid_amount,
+                        "from": buyer_name,
+                        "time": format_time(sale.sale_date)
+                    })
+
+                for crop in sale.crops:
+                    entries.append({
+                        "type": "sale",
+                        "crop": crop.get("crop_name"),
+                        "bags": crop.get("bags"),
+                        "to": buyer_name,
+                        "time": format_time(sale.sale_date)
+                    })
+
+            return sorted(entries, key=lambda x: x["time"])
+
+        data = {
+            "today": get_entries(today),
+            "yesterday": get_entries(yesterday)
+        }
+
+        return Response(data)
+
+
+
+
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import permissions
+from collections import defaultdict
 from .models import DetailedSale
 from .permissions import IsPaidMember
 

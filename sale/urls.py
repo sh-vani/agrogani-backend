@@ -9,6 +9,7 @@ from .views import (
     CropBuyerLedgerAPIView,
     BuyerLedgerListAPIView,
     BuyerLedgerSummaryAPIView,
+       BuyerLedgerDailyAPIView
 )
 
 urlpatterns = [
@@ -26,6 +27,11 @@ urlpatterns = [
 
 
        path('ledger/summary/', BuyerLedgerSummaryAPIView.as_view(), name='buyer-ledger-summary'),
+  
+
+    path('buyer-ledger-daily/', BuyerLedgerDailyAPIView.as_view(), name='buyer-ledger-daily'),
+
+
 ]
 
 
