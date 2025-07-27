@@ -34,7 +34,7 @@ class UserActivityMiddleware:
         mapping = {
             "crop": "Crop",
             "expense": "Expense",
-            "task": "Task",
+            "Task": "Task",
             "sales": "Sales",
             "report": "Report",
             "income": "Income",
@@ -48,7 +48,7 @@ class UserActivityMiddleware:
         return "General"
 
     def get_event_type(self, path, method):
-        if "complete" in path and "task" in path:
+        if "complete" in path and "Task" in path:
             return "Completed Task"
         elif "expense" in path and method == "POST":
             return "Created Expense"
@@ -68,24 +68,24 @@ class UserActivityMiddleware:
 
     def get_icon(self, path, method):
         if "complete" in path:
-            return "✅"
+            return ""
         elif "expense" in path:
-            return "💰"
+            return ""
         elif "report" in path:
-            return "📊"
+            return ""
         elif "crop" in path:
-            return "🌾"
+            return ""
         elif "sales" in path:
-            return "🛒"
+            return ""
         elif "income" in path:
-            return "📥"
+            return ""
         elif "buyer" in path:
-            return "🧑‍🌾"
+            return ""
         elif "seller" in path:
-            return "🏪"
+            return ""
         elif "labour" in path:
-            return "🧱"
-        return "🧭"
+            return ""
+        return ""
 
     def get_description_from_path(self, path, method, user):
         full_name = user.full_name
@@ -94,38 +94,38 @@ class UserActivityMiddleware:
         if "tasks" in path and "complete" in path:
             task_id = self.extract_id(path, "tasks")
             task_name = self.get_model_name(task_id, "task", "Task")
-            return f'Task "{task_name}" (ID #{task_id}) marked complete by {full_name} ✅'
+            return f'Task "{task_name}" (ID #{task_id}) marked complete by {full_name} '
 
         elif "expense" in path and method == "POST":
-            return f'{full_name} added a new expense entry 💸'
+            return f'{full_name} added a new expense entry '
 
         elif "report" in path:
             report_type = path.split("/")[-1].replace("-", " ").title()
-            return f'{full_name} viewed the "{report_type}" report 📈'
+            return f'{full_name} viewed the "{report_type}" report '
 
         elif "crop" in path and method == "PUT":
-            return f'{full_name} updated crop data 🌾'
+            return f'{full_name} updated crop data '
 
         elif "income" in path and method == "POST":
-            return f'{full_name} recorded a new income entry 📥'
+            return f'{full_name} recorded a new income entry '
 
         elif "sales" in path and method == "POST":
-            return f'{full_name} created a new sales transaction 🛒'
+            return f'{full_name} created a new sales transaction '
 
         elif "buyer" in path and method == "POST":
             buyer_id = self.extract_id(path, "buyer")
             buyer_name = self.get_model_name(buyer_id, "buyer", "Buyer")
-            return f'{full_name} added a new buyer: "{buyer_name}" 🧑‍🌾'
+            return f'{full_name} added a new buyer: "{buyer_name}" '
 
         elif "seller" in path and method == "POST":
             seller_id = self.extract_id(path, "seller")
             seller_name = self.get_model_name(seller_id, "seller", "Seller")
-            return f'{full_name} added a new seller: "{seller_name}" 🏪'
+            return f'{full_name} added a new seller: "{seller_name}" '
 
         elif "labour" in path and method == "POST":
-            return f'{full_name} logged labour activity 🧱'
+            return f'{full_name} logged labour activity '
 
-        return f'{full_name} accessed {path} via {method} 🧭'
+        return f'{full_name} accessed {path} via {method} '
 
     def extract_id(self, path, keyword):
         match = re.search(rf'{keyword}/(\d+)/', path)
