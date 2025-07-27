@@ -10,8 +10,8 @@ from .views import (
     BuyerLedgerListAPIView,
 BuyerLedgerLatestAPIView,
 
-
-
+BuyerLedgerTodayAPIView,
+CommodityTransactionSummaryAPIView,
     BuyerLedgerMonthlyAPIView,
     BuyerLedgerSummaryAPIView,
        BuyerLedgerDailyAPIView
@@ -35,8 +35,10 @@ path('buyer-ledger-latest/', BuyerLedgerLatestAPIView.as_view(), name='buyer-led
 
        path('ledger/summary/', BuyerLedgerSummaryAPIView.as_view(), name='buyer-ledger-summary'),
   
-
     path('buyer-ledger-daily/', BuyerLedgerDailyAPIView.as_view(), name='buyer-ledger-daily'),
+     path('buyer-ledger/', BuyerLedgerTodayAPIView.as_view(), name='buyer-ledger'),
+       path('ledger/transaction/',CommodityTransactionSummaryAPIView.as_view(), name='transaction-list'),
+
 
 
 ]

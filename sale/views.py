@@ -275,6 +275,166 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import permissions
 from collections import defaultdict
+from .models import DetailedSale
+from .permissions import IsPaidMember
+from datetime import date
+from django.db.models import Max
+
+class BuyerLedgerTodayAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsPaidMember]
+
+    def get(self, request):
+        user = request.user
+        today = date.today()
+
+        # Try to get today's sales
+        sales = DetailedSale.objects.filter(user=user, sale_date=today)
+
+        # If no sales today, get latest available date
+        if not sales.exists():
+            latest_date = DetailedSale.objects.filter(user=user).aggregate(Max("sale_date"))["sale_date__max"]
+            if not latest_date:
+                return Response({"message": "No transactions found"}, status=404)
+            sales = DetailedSale.objects.filter(user=user, sale_date=latest_date)
+
+        ledger = defaultdict(lambda: {
+            "buyer_name": "",
+    
+            "date": None,
+            "transactions": []
+        })
+
+        for sale in sales:
+            buyer = sale.buyer_details.get("buyer_name", "Unknown")
+            entry = ledger[buyer]
+
+            entry["buyer_name"] = buyer
+         
+            entry["date"] = sale.sale_date.strftime("%Y-%m-%d")
+
+            time_str = sale.created_at.strftime("%I:%M %p") if sale.created_at else "Unknown Time"
+
+            # Payment received
+            paid_amount = sale.payment_details.get("paid_amount", 0)
+            if paid_amount > 0:
+                entry["transactions"].append({
+                    "type": "Payment Received",
+                    "time": time_str,
+                    "amount": paid_amount
+                })
+
+            # Crop sales
+            for crop in sale.crops:
+                entry["transactions"].append({
+                    "type": "Crop Sale",
+                    "time": time_str,
+                    "crop": crop.get("crop_name", ""),
+                    "bags": crop.get("bags", 0),
+                    "rate": crop.get("rate_per_kg", 0),
+                    "amount": crop.get("total_amount", 0)
+                })
+
+        return Response(list(ledger.values()))
+
+
+
+
+
+
+
+
+class CommodityTransactionSummaryAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsPaidMember]
+
+    def get(self, request):
+        user = request.user
+        period = request.query_params.get("period", "today").lower()
+        today = date.today()
+
+        # Date range based on period
+        if period == "today":
+            start_date = end_date = today
+        elif period == "week":
+            start_date = today - timedelta(days=7)
+            end_date = today
+        elif period == "month":
+            start_date = today.replace(day=1)
+            end_date = today
+        else:
+            return Response({"error": "Invalid period"}, status=400)
+
+        # Primary query
+        sales = DetailedSale.objects.filter(
+            user=user,
+            sale_date__range=[start_date, end_date]
+        ).order_by("-sale_date", "-created_at")
+
+        fallback_used = False
+
+        # Fallback if no data
+        if not sales.exists():
+            latest_sale = DetailedSale.objects.filter(user=user).order_by("-sale_date", "-created_at").first()
+            if latest_sale:
+                sales = [latest_sale]
+                fallback_used = True
+            else:
+                return Response({"message": "No transactions found"}, status=204)
+
+        transactions = []
+
+        for sale in sales:
+            time_str = sale.created_at.strftime("%I:%M %p") if sale.created_at else "Unknown Time"
+            date_str = (
+                "Today" if sale.sale_date == today else
+                "Yesterday" if sale.sale_date == today - timedelta(days=1) else
+                sale.sale_date.strftime("%d %b")
+            )
+
+            payment_amount = sale.payment_details.get("paid_amount", 0)
+            total_amount = sale.total_sale_amount
+            if payment_amount == total_amount:
+                payment_status = "Paid"
+            elif payment_amount == 0:
+                payment_status = "Due"
+            else:
+                payment_status = "Partial"
+
+            for crop in sale.crops:
+                transactions.append({
+                    "crop_name": crop.get("crop_name", ""),
+                    "bags": f"{crop.get('bags', 0)} bags × {crop.get('weight_per_bag', 0)}kg",
+                    "rate": f"₹{crop.get('rate_per_kg', 0)}/kg",
+                    "date_time": f"{date_str}, {time_str}",
+                    "amount": f"₹{crop.get('total_amount', 0)}",
+                    "payment_status": payment_status
+                })
+
+        return Response({
+            "fallback": fallback_used,
+            "period": period,
+            "transactions": transactions
+        })
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import permissions
+from collections import defaultdict
 from django.utils.timezone import localtime, now
 from datetime import timedelta
 from django.db.models.functions import TruncDate
