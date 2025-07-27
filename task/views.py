@@ -180,8 +180,24 @@ class TaskSummaryView(APIView):
 
 
 
-from accounts.utils import log_activity
+from rest_framework import status
 
-def add_expense(request):
-    ...
-    log_activity(request.user, 'expense', f"Added Fertilizer expense ₹120.50")
+class UpdateTaskView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request, task_id):
+        task = get_object_or_404(Task, id=task_id, user=request.user)
+        serializer = TaskSerializer(task, data=request.data, partial=True)  # partial=True allows partial updates
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"success": True, "message": "Task updated successfully."})
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class DeleteTaskView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, task_id):
+        task = get_object_or_404(Task, id=task_id, user=request.user)
+        task.delete()
+        return Response({"success": True, "message": "Task deleted successfully."})
