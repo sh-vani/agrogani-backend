@@ -300,52 +300,150 @@ class MonthlyTrendsAPIView(APIView):
 
 
 
+# from rest_framework.views import APIView
+# from rest_framework.response import Response
+# from rest_framework.permissions import IsAuthenticated
+# from .permissions import IsPaidMember
+# from sale.models import QuickSale, DetailedSale
+
+# from django.db.models import Sum
+# from datetime import datetime
+
+# class IncomeSourcesAPIView(APIView):
+#     permission_classes = [IsAuthenticated, IsPaidMember]
+
+#     def get(self, request):
+#         user = request.user
+#         month = int(request.query_params.get('month', datetime.today().month))
+#         year = int(request.query_params.get('year', datetime.today().year))
+
+#         start_date = datetime(year, month, 1).date()
+#         end_date = datetime(year, month + 1, 1).date() if month < 12 else datetime(year + 1, 1, 1).date()
+
+#         # Product Sale
+#         quick_sale = QuickSale.objects.filter(
+#             user=user, created_at__date__range=[start_date, end_date]
+#         ).aggregate(total=Sum('amount'))['total'] or 0
+
+#         detailed_sale = DetailedSale.objects.filter(
+#             user=user, sale_date__range=[start_date, end_date]
+#         ).aggregate(total=Sum('total_sale_amount'))['total'] or 0
+
+#         product_sale = quick_sale + detailed_sale
+
+#         # # Subsidy
+#         # subsidy = Subsidy.objects.filter(
+#         #     user=user, date__range=[start_date, end_date]
+#         # ).aggregate(total=Sum('amount'))['total'] or 0
+
+#         # # Other Income
+#         # other_income = OtherIncome.objects.filter(
+#         #     user=user, date__range=[start_date, end_date]
+#         # ).aggregate(total=Sum('amount'))['total'] or 0
+
+#         return Response([
+#             { "source": "Product Sale", "amount": round(product_sale, 2) },
+#             # { "source": "Subsidy", "amount": round(subsidy, 2) },
+#             # { "source": "Other Income", "amount": round(other_income, 2) }
+#         ])
+
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from .permissions import IsPaidMember
 from sale.models import QuickSale, DetailedSale
-# from income.models import Subsidy, OtherIncome
-from django.db.models import Sum
 from datetime import datetime
+from collections import defaultdict
+from calendar import monthrange
 
 class IncomeSourcesAPIView(APIView):
     permission_classes = [IsAuthenticated, IsPaidMember]
 
     def get(self, request):
         user = request.user
+
+        # Get month and year from query params or default to current
         month = int(request.query_params.get('month', datetime.today().month))
         year = int(request.query_params.get('year', datetime.today().year))
 
+        # Current month range
         start_date = datetime(year, month, 1).date()
-        end_date = datetime(year, month + 1, 1).date() if month < 12 else datetime(year + 1, 1, 1).date()
+        end_day = monthrange(year, month)[1]
+        end_date = datetime(year, month, end_day).date()
 
-        # Product Sale
-        quick_sale = QuickSale.objects.filter(
-            user=user, created_at__date__range=[start_date, end_date]
-        ).aggregate(total=Sum('amount'))['total'] or 0
+        # Previous month range
+        if month == 1:
+            prev_month = 12
+            prev_year = year - 1
+        else:
+            prev_month = month - 1
+            prev_year = year
 
-        detailed_sale = DetailedSale.objects.filter(
-            user=user, sale_date__range=[start_date, end_date]
-        ).aggregate(total=Sum('total_sale_amount'))['total'] or 0
+        prev_start_date = datetime(prev_year, prev_month, 1).date()
+        prev_end_day = monthrange(prev_year, prev_month)[1]
+        prev_end_date = datetime(prev_year, prev_month, prev_end_day).date()
 
-        product_sale = quick_sale + detailed_sale
+        # Helper to calculate total sale
+        def calculate_total(user, start, end):
+            total = 0.0
 
-        # # Subsidy
-        # subsidy = Subsidy.objects.filter(
-        #     user=user, date__range=[start_date, end_date]
-        # ).aggregate(total=Sum('amount'))['total'] or 0
+            quick_sales = QuickSale.objects.filter(
+                user=user,
+                created_at__date__range=[start, end]
+            )
+            total += sum(float(s.amount) for s in quick_sales)
 
-        # # Other Income
-        # other_income = OtherIncome.objects.filter(
-        #     user=user, date__range=[start_date, end_date]
-        # ).aggregate(total=Sum('amount'))['total'] or 0
+            detailed_sales = DetailedSale.objects.filter(
+                user=user,
+                sale_date__range=[start, end]
+            )
+            for sale in detailed_sales:
+                for item in sale.crops:
+                    total += float(item.get("total_amount", 0))
 
+            return total
+
+        # 🔹 Total sales
+        current_total = calculate_total(user, start_date, end_date)
+        previous_total = calculate_total(user, prev_start_date, prev_end_date)
+
+        # 🔹 Percent change
+        if previous_total == 0:
+            percent_change = 100.0 if current_total > 0 else 0.0
+        else:
+            percent_change = ((current_total - previous_total) / previous_total) * 100
+
+        # 🔹 Product names
+        product_names = set()
+
+        quick_sales = QuickSale.objects.filter(
+            user=user,
+            created_at__date__range=[start_date, end_date]
+        )
+        product_names.update(str(s.crop_name) for s in quick_sales if s.crop_name)
+
+        detailed_sales = DetailedSale.objects.filter(
+            user=user,
+            sale_date__range=[start_date, end_date]
+        )
+        for sale in detailed_sales:
+            for item in sale.crops:
+                name = item.get("crop_name")
+                if name:
+                    product_names.add(str(name))
+
+        # 🔹 Final response
         return Response([
-            { "source": "Product Sale", "amount": round(product_sale, 2) },
-            # { "source": "Subsidy", "amount": round(subsidy, 2) },
-            # { "source": "Other Income", "amount": round(other_income, 2) }
+            {
+                "source": "Product Sale",
+                "amount": round(current_total, 2),
+                "product_name": ", ".join(product_names),
+                "percent": f"{round(percent_change, 2)}%"
+            }
         ])
+
+
+
 
 from rest_framework.views import APIView
 from rest_framework.response import Response

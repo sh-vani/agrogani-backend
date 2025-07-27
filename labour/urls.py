@@ -20,6 +20,7 @@ urlpatterns = [
     path('attendance/<int:pk>/update/', AttendanceUpdateView.as_view(), name='attendance-update'),
     path('attendance/<int:pk>/delete/', AttendanceDeleteView.as_view(), name='attendance-delete'),
 
+path('attendance/daily-overview/', DailyAttendanceOverview.as_view(), name='attendance-daily-overview'),
 
 
 

@@ -102,6 +102,46 @@ class AttendanceRetrieveView(generics.RetrieveAPIView):
 
 
 
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from datetime import datetime
+from .models import Labour, Attendance
+
+class DailyAttendanceOverview(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        date_str = request.query_params.get('date')
+        if not date_str:
+            return Response({"error": "Date parameter is required"}, status=400)
+
+        try:
+            target_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+        except ValueError:
+            return Response({"error": "Invalid date format. Use YYYY-MM-DD"}, status=400)
+
+        labours = Labour.objects.filter(user=request.user)
+        response_data = []
+
+        for labour in labours:
+            attendance = Attendance.objects.filter(labour=labour, date=target_date).first()
+            response_data.append({
+                "labour_id": labour.id,
+                "name": labour.name,
+                "mobile": labour.mobile,
+                "daily_wage": str(labour.daily_wage),
+                "gender": labour.gender,
+                "status": attendance.status if attendance else None,
+                "date": date_str
+            })
+
+        return Response(response_data)
+
+
+
+
+
 # payment 
 
 
