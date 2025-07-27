@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import RegisterView, VerifyOTPView, SetPasswordView,CreatePlanOrderAPIView, VerifyPaymentAPIView,dashboard_header
-from .views import LoginView,WeatherAPIView,ForgotPasswordRequestView,ForgotPasswordVerifyOTPView,ResetPasswordView,RecentActivityView
+from .views import LoginView,WeatherAPIView,ForgotPasswordRequestView,ForgotPasswordVerifyOTPView,ResetPasswordView,RecentActivityAPI
 # recent_user_activities
 
 
@@ -27,7 +27,8 @@ urlpatterns = [
     
 
 
-    path('recent-activities/', RecentActivityView.as_view(), name='recent_activities'),
+
+    path('recent-activities/', RecentActivityAPI.as_view(), name='recent_activities'),
 
 
 

@@ -61,9 +61,11 @@ class ResetPasswordSerializer(serializers.Serializer):
 
 # activeite recent
 from rest_framework import serializers
-from .models import UserActivity
+from .models import ActivityLog
 
-class UserActivitySerializer(serializers.ModelSerializer):
+
+# serializers.py
+class ActivityLogSerializer(serializers.ModelSerializer):
     class Meta:
-        model = UserActivity
-        fields = ['action_type', 'description', 'timestamp']
+        model = ActivityLog
+        fields = ["event_type", "description", "module", "icon_type", "timestamp"]

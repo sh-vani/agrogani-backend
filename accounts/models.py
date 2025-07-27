@@ -86,30 +86,24 @@ class RazorpayLog(models.Model):
 
 
 
-# class UserActivity(models.Model):
-#     user = models.ForeignKey(User, on_delete=models.CASCADE)
-#     action_type = models.CharField(max_length=100)
-#     description = models.TextField()
-#     timestamp = models.DateTimeField(auto_now_add=True)
-
-
-
-from django.db import models
-from django.contrib.auth import get_user_model
-
-User = get_user_model()
-
-class UserActivity(models.Model):
+class ActivityLog(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    action_type = models.CharField(max_length=100)  # e.g., 'irrigation', 'expense', 'task'
-    description = models.TextField()
+    module = models.CharField(max_length=50)         # e.g. "Crop", "Sale"
+    event_type = models.CharField(max_length=100)    # e.g. "Added Sale"
+    description = models.TextField()                 # Summary for frontend
+    icon_type = models.CharField(max_length=50, blank=True)
+    reference_id = models.CharField(max_length=100, blank=True)
+    extra_info = models.JSONField(blank=True, null=True)
     timestamp = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        ordering = ['-timestamp']
+        # Optional internal-only
+    was_accessed = models.BooleanField(default=False)
+    accessed_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
-        return f"{self.user} - {self.action_type} - {self.timestamp}"
+        return f"[{self.module}] {self.user.username} - {self.event_type}"
+
+
+
 
 
 

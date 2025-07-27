@@ -361,16 +361,28 @@ class WeatherAPIView(APIView):
 
 # actuve log
 
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from .models import UserActivity
-from .serializers import UserActivitySerializer
 
-class RecentActivityView(APIView):
+
+# active
+from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from .models import ActivityLog
+from .serializers import ActivityLogSerializer
+
+
+
+
+
+class RecentActivityAPI(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        activities = UserActivity.objects.filter(user=request.user)[:5]
-        serializer = UserActivitySerializer(activities, many=True)
+        logs = ActivityLog.objects.filter(
+            user=request.user
+        ).exclude(
+            event_type__icontains="/recent-activities/"
+        ).order_by("-timestamp")[:20]
+
+        serializer = ActivityLogSerializer(logs, many=True)
         return Response(serializer.data)

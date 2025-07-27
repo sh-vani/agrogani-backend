@@ -2,6 +2,7 @@ from rest_framework import generics, permissions
 from .models import Expense
 from .serializers import ExpenseSerializer
 
+
 class ExpenseCreateView(generics.CreateAPIView):
     queryset = Expense.objects.all()
     serializer_class = ExpenseSerializer
@@ -9,6 +10,9 @@ class ExpenseCreateView(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+
+
 
 
 
