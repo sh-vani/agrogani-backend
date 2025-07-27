@@ -8,7 +8,8 @@ from .views import (
         AddFertilizerShopView,
     ListFertilizerShopsView,
     UpdateFertilizerShopView,
-    DeleteFertilizerShopView
+    DeleteFertilizerShopView,
+    AdvisoryShopCountView
 )
 
 urlpatterns = [
@@ -22,6 +23,11 @@ urlpatterns = [
     path('list/', ListFertilizerShopsView.as_view(), name='list-shops'),
     path('shops/<int:shop_id>/update/', UpdateFertilizerShopView.as_view(), name='update-shop'),
     path('shops/<int:shop_id>/delete/', DeleteFertilizerShopView.as_view(), name='delete-shop'),
+
+
+    path('advisory-count/', AdvisoryShopCountView.as_view(), name='advisory-shop-count'),
+
+
 ]
 
 

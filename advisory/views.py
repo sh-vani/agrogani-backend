@@ -88,6 +88,40 @@ class DeleteFertilizerShopView(APIView):
 
 
 
+
+
+# advisory/views.py
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from django.utils.timezone import now
+from advisory.models import Advisory, FertilizerShop
+
+class AdvisoryShopCountView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        today = now().date()
+
+        advisor_total = Advisory.objects.count()
+        advisor_today = Advisory.objects.filter(created_at__date=today).count()
+
+        fertilizer_total = FertilizerShop.objects.count()
+
+        return Response({
+            "advisors": {
+                "total": advisor_total,
+                "added_today": advisor_today
+            },
+            "fertilizer_shops": {
+                "total": fertilizer_total
+            }
+        })
+
+
+
+
 # from rest_framework.views import APIView
 # from rest_framework.response import Response
 # from rest_framework.permissions import IsAuthenticated

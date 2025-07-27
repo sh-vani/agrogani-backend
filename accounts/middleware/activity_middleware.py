@@ -88,7 +88,8 @@ class UserActivityMiddleware:
         return "🧭"
 
     def get_description_from_path(self, path, method, user):
-        full_name = user.get_full_name()
+        full_name = user.full_name
+
 
         if "tasks" in path and "complete" in path:
             task_id = self.extract_id(path, "tasks")

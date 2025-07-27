@@ -1,4 +1,7 @@
 from django.db import models
+from django.utils import timezone
+
+created_at = models.DateTimeField(auto_now_add=True, default=timezone.now)
 
 class Advisory(models.Model):  # Renamed from ImportantContact
     name = models.CharField(max_length=100)
@@ -9,7 +12,7 @@ class Advisory(models.Model):  # Renamed from ImportantContact
     email = models.EmailField(blank=True, null=True)
     office_address = models.CharField(max_length=255, blank=True, null=True)
     timing = models.CharField(max_length=100, blank=True, null=True)
-
+    created_at = models.DateTimeField(auto_now_add=True)  # 🔥
     def __str__(self):
         return self.name
 
