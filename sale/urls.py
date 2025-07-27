@@ -8,6 +8,11 @@ from .views import (
     DetailedSaleListView,
     CropBuyerLedgerAPIView,
     BuyerLedgerListAPIView,
+BuyerLedgerLatestAPIView,
+
+
+
+    BuyerLedgerMonthlyAPIView,
     BuyerLedgerSummaryAPIView,
        BuyerLedgerDailyAPIView
 )
@@ -25,6 +30,8 @@ urlpatterns = [
     # 🔹 Buyer Ledger List (All Buyers)
     path('ledger/buyers/', BuyerLedgerListAPIView.as_view(), name='buyer-ledger-list'),
 
+path('buyer-ledger-monthly/', BuyerLedgerMonthlyAPIView.as_view(), name='buyer-ledger-monthly'),
+path('buyer-ledger-latest/', BuyerLedgerLatestAPIView.as_view(), name='buyer-ledger-latest'),
 
        path('ledger/summary/', BuyerLedgerSummaryAPIView.as_view(), name='buyer-ledger-summary'),
   

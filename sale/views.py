@@ -271,13 +271,13 @@ class BuyerLedgerListAPIView(APIView):
 
 
 
-
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import permissions
 from collections import defaultdict
 from django.utils.timezone import localtime, now
 from datetime import timedelta
+from django.db.models.functions import TruncDate
 from .models import DetailedSale
 from .permissions import IsPaidMember
 
@@ -292,8 +292,12 @@ class BuyerLedgerDailyAPIView(APIView):
         def format_time(dt):
             return localtime(dt).strftime("%I:%M %p")
 
-        def get_entries(date):
-            sales = DetailedSale.objects.filter(user=user, sale_date__date=date)
+        def get_entries(target_date):
+            # Annotate sale_date to extract just the date part
+            sales = DetailedSale.objects.annotate(
+                sale_day=TruncDate('sale_date')
+            ).filter(user=user, sale_day=target_date)
+
             entries = []
 
             for sale in sales:
@@ -317,6 +321,7 @@ class BuyerLedgerDailyAPIView(APIView):
                         "time": format_time(sale.sale_date)
                     })
 
+            # Sort by time for consistent ordering
             return sorted(entries, key=lambda x: x["time"])
 
         data = {
@@ -329,6 +334,129 @@ class BuyerLedgerDailyAPIView(APIView):
 
 
 
+
+
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import permissions
+from collections import defaultdict
+from django.utils.timezone import localtime, now
+from django.db.models.functions import TruncDate
+from .models import DetailedSale
+from .permissions import IsPaidMember
+
+class BuyerLedgerMonthlyAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsPaidMember]
+
+    def get(self, request):
+        user = request.user
+        today = localtime(now()).date()
+        first_day = today.replace(day=1)
+
+        # Annotate sale_day and filter by current month
+        sales = DetailedSale.objects.annotate(
+            sale_day=TruncDate('sale_date')
+        ).filter(user=user, sale_day__gte=first_day, sale_day__lte=today)
+
+        ledger_by_date = defaultdict(list)
+
+        def format_time(dt):
+            return localtime(dt).strftime("%I:%M %p")
+
+        for sale in sales:
+            sale_day = sale.sale_date.strftime("%Y-%m-%d")
+            buyer_name = sale.buyer_details.get("buyer_name", "Unknown")
+            paid_amount = sale.payment_details.get("paid_amount", 0)
+
+            if paid_amount > 0:
+                ledger_by_date[sale_day].append({
+                    "type": "received",
+                    "amount": paid_amount,
+                    "from": buyer_name,
+                    "time": format_time(sale.sale_date)
+                })
+
+            for crop in sale.crops:
+                ledger_by_date[sale_day].append({
+                    "type": "sale",
+                    "crop": crop.get("crop_name"),
+                    "bags": crop.get("bags"),
+                    "to": buyer_name,
+                    "time": format_time(sale.sale_date)
+                })
+
+        # Sort entries within each date
+        for date in ledger_by_date:
+            ledger_by_date[date] = sorted(ledger_by_date[date], key=lambda x: x["time"])
+
+        return Response(dict(ledger_by_date))
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import permissions
+from collections import defaultdict
+from django.utils.timezone import localtime, is_naive, make_aware
+from django.db.models.functions import TruncDate
+from .models import DetailedSale
+from .permissions import IsPaidMember
+import datetime
+
+class BuyerLedgerLatestAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsPaidMember]
+
+    def get(self, request):
+        user = request.user
+
+        # Annotate sales with truncated date
+        sales = DetailedSale.objects.annotate(
+            sale_day=TruncDate('date')
+        ).filter(user=user)
+
+        if not sales.exists():
+            return Response({"message": "No transactions found"}, status=404)
+
+        # ✅ Use sale_day directly
+        latest_date = sales.order_by('day').first().sale_day
+
+        # Filter sales for that date
+        latest_sales = sales.filter(sale_day=latest_date)
+
+        ledger = defaultdict(list)
+
+        def format_time(dt):
+            # ✅ Ensure it's a datetime, not a date
+            if isinstance(dt, datetime.date) and not isinstance(dt, datetime.datetime):
+                return dt.strftime("%d-%m-%Y")  # fallback format
+            if is_naive(dt):
+                dt = make_aware(dt)
+            return localtime(dt).strftime("%I:%M %p")
+
+        for sale in latest_sales:
+            buyer_name = sale.buyer_details.get("buyer_name", "Unknown")
+            paid_amount = sale.payment_details.get("paid_amount", 0)
+
+            if paid_amount > 0:
+                ledger[str(latest_date)].append({
+                    "type": "received",
+                    "amount": paid_amount,
+                    "from": buyer_name,
+                    "time": format_time(sale.sale_date)
+                })
+
+            for crop in sale.crops:
+                ledger[str(latest_date)].append({
+                    "type": "sale",
+                    "crop": crop.get("crop_name"),
+                    "bags": crop.get("bags"),
+                    "to": buyer_name,
+                    "time": format_time(sale.sale_date)
+                })
+
+        # Sort entries by time
+        ledger[str(latest_date)] = sorted(ledger[str(latest_date)], key=lambda x: x["time"])
+
+        return Response(dict(ledger))
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
