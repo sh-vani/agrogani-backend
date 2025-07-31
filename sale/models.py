@@ -18,22 +18,22 @@ class QuickSale(models.Model):
     def __str__(self):
         return f"{self.crop_name} - {self.amount} ₹"
 
-class DetailedSale(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    sale_date = models.DateField(auto_now_add=True)
-    crops = models.JSONField()  # Example: [{"crop_name": "Wheat", "bags": 10, ...}]
-    transport_details = models.JSONField()
-    buyer_details = models.JSONField()
-    payment_details = models.JSONField()
-    total_sale_amount = models.DecimalField(max_digits=12, decimal_places=2)
-    total_expenses = models.DecimalField(max_digits=12, decimal_places=2)
-    net_income = models.DecimalField(max_digits=12, decimal_places=2)
-    note = models.TextField(blank=True, null=True)
-    receipt = models.ImageField(upload_to='sales/detailed/', blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+# class DetailedSale(models.Model):
+#     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+#     sale_date = models.DateField(auto_now_add=True)
+#     crops = models.JSONField()  # Example: [{"crop_name": "Wheat", "bags": 10, ...}]
+#     transport_details = models.JSONField()
+#     buyer_details = models.JSONField()
+#     payment_details = models.JSONField()
+#     total_sale_amount = models.DecimalField(max_digits=12, decimal_places=2)
+#     total_expenses = models.DecimalField(max_digits=12, decimal_places=2)
+#     net_income = models.DecimalField(max_digits=12, decimal_places=2)
+#     note = models.TextField(blank=True, null=True)
+#     receipt = models.ImageField(upload_to='sales/detailed/', blank=True, null=True)
+#     created_at = models.DateTimeField(auto_now_add=True)
 
-    def __str__(self):
-        return f"Detailed Sale - {self.total_sale_amount} ₹"
+#     def __str__(self):
+#         return f"Detailed Sale - {self.total_sale_amount} ₹"
 
 
 

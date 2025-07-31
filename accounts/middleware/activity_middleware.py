@@ -1,4 +1,3 @@
-# accounts/middleware/activity_middleware.py
 from accounts.models import ActivityLog
 from django.utils.timezone import now
 import re
@@ -19,13 +18,14 @@ class UserActivityMiddleware:
 
         if request.user.is_authenticated:
             path = request.path
+            method = request.method
             if not any(path.startswith(p) for p in self.IGNORED_PATHS):
                 ActivityLog.objects.create(
                     user=request.user,
-                    event_type=self.get_event_type(path, request.method),
+                    event_type=self.get_event_type(path, method, request.user),
                     module=self.get_module_from_path(path),
-                    description=self.get_description_from_path(path, request.method, request.user),
-                    icon_type=self.get_icon(path, request.method)
+                    description=self.get_description_from_path(path, method, request.user),
+                    icon_type=""  # No icon used
                 )
 
         return response
@@ -34,98 +34,74 @@ class UserActivityMiddleware:
         mapping = {
             "crop": "Crop",
             "expense": "Expense",
-            "Task": "Task",
+            "task": "Task",
             "sales": "Sales",
             "report": "Report",
             "income": "Income",
             "buyer": "Buyer",
             "labour": "Labour",
-            "seller": "Seller"
+            "seller": "Seller",
+            "ledger": "Ledger",
+            "advisory": "Advisory",
+            "userprofile": "Profile"
         }
         for key in mapping:
-            if key in path:
+            if key in path.lower():
                 return mapping[key]
         return "General"
 
-    def get_event_type(self, path, method):
-        if "complete" in path and "Task" in path:
-            return "Completed Task"
-        elif "expense" in path and method == "POST":
-            return "Created Expense"
-        elif "report" in path:
-            return "Viewed Report"
-        elif "crop" in path and method == "PUT":
-            return "Updated Crop"
-        elif "income" in path and method == "POST":
-            return "Recorded Income"
-        elif "buyer" in path and method == "POST":
-            return "Added Buyer"
-        elif "seller" in path and method == "POST":
-            return "Added Seller"
-        elif "labour" in path and method == "POST":
-            return "Logged Labour Activity"
+    def get_event_type(self, path, method, user):
+        path_lower = path.lower().rstrip("/")
+
+        if "crop/add" in path_lower and method == "POST":
+            return "Crop Added"
+        if "expense" in path_lower and method == "POST":
+            return "Expense Recorded"
+        if "task/complete" in path_lower and method == "POST":
+            return "Task Completed"
+        if "sales/add" in path_lower and method == "POST":
+            return "Sale Added"
+        if "report" in path_lower and method == "GET":
+            return "Report Viewed"
+        if "buyer/add" in path_lower and method == "POST":
+            return "Buyer Added"
+        if "labour/add" in path_lower and method == "POST":
+            return "Labour Added"
+        if "ledger" in path_lower and method == "GET":
+            return "Ledger Viewed"
+        if "advisory/advisories/list" in path_lower and method == "GET":
+            return "Advisory Viewed"
+        if "userprofile/profile" in path_lower and method == "GET":
+            return "Profile Viewed"
+
         return f"{method} {path}"
 
-    def get_icon(self, path, method):
-        if "complete" in path:
-            return ""
-        elif "expense" in path:
-            return ""
-        elif "report" in path:
-            return ""
-        elif "crop" in path:
-            return ""
-        elif "sales" in path:
-            return ""
-        elif "income" in path:
-            return ""
-        elif "buyer" in path:
-            return ""
-        elif "seller" in path:
-            return ""
-        elif "labour" in path:
-            return ""
-        return ""
-
     def get_description_from_path(self, path, method, user):
-        full_name = user.full_name
+        full_name = getattr(user, "full_name", None) or getattr(user, "get_full_name", lambda: None)() or getattr(user, "username", "User")
+        path_lower = path.lower().rstrip("/")
 
+        if "crop/add" in path_lower and method == "POST":
+            return f"{full_name} added a new crop"
+        if "expense" in path_lower and method == "POST":
+            return f"{full_name} recorded an expense"
+        if "task/complete" in path_lower and method == "POST":
+            return f"{full_name} marked a task as complete"
+        if "sales/add" in path_lower and method == "POST":
+            return f"{full_name} added a sale record"
+        if "report" in path_lower and method == "GET":
+            return f"{full_name} viewed a report"
+        if "buyer/add" in path_lower and method == "POST":
+            return f"{full_name} added a new buyer"
+        if "labour/add" in path_lower and method == "POST":
+            return f"{full_name} added a labour record"
+        if "ledger" in path_lower and method == "GET":
+            return f"{full_name} viewed ledger details"
+        if "advisory/advisories/list" in path_lower and method == "GET":
+            return f"{full_name} viewed advisory contacts"
+        if "userprofile/profile" in path_lower and method == "GET":
+            return f"{full_name} viewed profile"
 
-        if "tasks" in path and "complete" in path:
-            task_id = self.extract_id(path, "tasks")
-            task_name = self.get_model_name(task_id, "task", "Task")
-            return f'Task "{task_name}" (ID #{task_id}) marked complete by {full_name} '
-
-        elif "expense" in path and method == "POST":
-            return f'{full_name} added a new expense entry '
-
-        elif "report" in path:
-            report_type = path.split("/")[-1].replace("-", " ").title()
-            return f'{full_name} viewed the "{report_type}" report '
-
-        elif "crop" in path and method == "PUT":
-            return f'{full_name} updated crop data '
-
-        elif "income" in path and method == "POST":
-            return f'{full_name} recorded a new income entry '
-
-        elif "sales" in path and method == "POST":
-            return f'{full_name} created a new sales transaction '
-
-        elif "buyer" in path and method == "POST":
-            buyer_id = self.extract_id(path, "buyer")
-            buyer_name = self.get_model_name(buyer_id, "buyer", "Buyer")
-            return f'{full_name} added a new buyer: "{buyer_name}" '
-
-        elif "seller" in path and method == "POST":
-            seller_id = self.extract_id(path, "seller")
-            seller_name = self.get_model_name(seller_id, "seller", "Seller")
-            return f'{full_name} added a new seller: "{seller_name}" '
-
-        elif "labour" in path and method == "POST":
-            return f'{full_name} logged labour activity '
-
-        return f'{full_name} accessed {path} via {method} '
+        return f"{full_name} performed {method} on {path}"
 
     def extract_id(self, path, keyword):
         match = re.search(rf'{keyword}/(\d+)/', path)

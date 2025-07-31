@@ -33,10 +33,16 @@ urlpatterns = [
 path('buyer-ledger-monthly/', BuyerLedgerMonthlyAPIView.as_view(), name='buyer-ledger-monthly'),
 path('buyer-ledger-latest/', BuyerLedgerLatestAPIView.as_view(), name='buyer-ledger-latest'),
 
-       path('ledger/summary/', BuyerLedgerSummaryAPIView.as_view(), name='buyer-ledger-summary'),
-  
+      
     path('buyer-ledger-daily/', BuyerLedgerDailyAPIView.as_view(), name='buyer-ledger-daily'),
+
+
+
+    
      path('buyer-ledger/', BuyerLedgerTodayAPIView.as_view(), name='buyer-ledger'),
+
+
+        path('ledger/summary/', BuyerLedgerSummaryAPIView.as_view(), name='buyer-ledger-summary'),
        path('ledger/transaction/',CommodityTransactionSummaryAPIView.as_view(), name='transaction-list'),
 
 
