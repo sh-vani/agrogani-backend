@@ -271,29 +271,49 @@ class BuyerLedgerListAPIView(APIView):
 
         return Response(list(ledger.values()))
 
-
 from datetime import date, timedelta
 from collections import defaultdict
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import permissions
 
 class BuyerLedgerTodayAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsPaidMember]
 
     def get(self, request):
         user = request.user
+        buyer_id = request.query_params.get("buyer_id")
+        date_filter = request.query_params.get("date_label", "all").lower()
 
-        # Get all sales by user
+        # Base queryset
         sales = DetailedSale.objects.filter(user=user).order_by('-sale_date', '-created_at')
+        if buyer_id:
+            sales = sales.filter(buyer__id=buyer_id)
+
         if not sales.exists():
             return Response({"message": "No transactions found"}, status=404)
 
-        # Group transactions by date
+        # Date references
+        today = date.today()
+        yesterday = today - timedelta(days=1)
+
+        # Group transactions
         grouped = defaultdict(list)
 
         for sale in sales:
             sale_date = sale.sale_date
-            time_str = sale.created_at.strftime("%I:%M %p") if sale.created_at else "Unknown Time"
 
-            buyer = sale.buyer_details.get("buyer_name", "Unknown")
+            # Apply date filter
+            if date_filter == "today" and sale_date != today:
+                continue
+            if date_filter == "yesterday" and sale_date != yesterday:
+                continue
+
+            time_str = sale.created_at.strftime("%I:%M %p") if sale.created_at else "Unknown Time"
+            buyer_name = (
+                sale.buyer.name if sale.buyer else
+                sale.buyer_details.get("buyer_name", "Unknown")
+            )
 
             # Received Payment
             paid_amount = sale.payment_details.get("paid_amount", 0)
@@ -301,8 +321,13 @@ class BuyerLedgerTodayAPIView(APIView):
                 grouped[sale_date].append({
                     "type": "received",
                     "title": f"Received ₹{paid_amount:,}",
-                    "subtitle": f"From: {buyer}",
-                    "time": time_str
+                    "subtitle": f"From: {buyer_name}",
+                    "time": time_str,
+                    "badge": {
+                        "date": sale_date.strftime("%d %b"),
+                        "time": time_str,
+                        "color": "blue"
+                    }
                 })
 
             # Sold Crops
@@ -312,14 +337,17 @@ class BuyerLedgerTodayAPIView(APIView):
                 grouped[sale_date].append({
                     "type": "sold",
                     "title": f"Sold {crop_name} - {bags} bags",
-                    "subtitle": f"To: {buyer}",
-                    "time": time_str
+                    "subtitle": f"To: {buyer_name}",
+                    "time": time_str,
+                    "badge": {
+                        "date": sale_date.strftime("%d %b"),
+                        "time": time_str,
+                        "color": "green"
+                    }
                 })
 
         # Format response
         response_data = []
-        today = date.today()
-        yesterday = today - timedelta(days=1)
 
         for sale_date in sorted(grouped.keys(), reverse=True):
             if sale_date == today:
@@ -346,10 +374,12 @@ class CommodityTransactionSummaryAPIView(APIView):
 
     def get(self, request):
         user = request.user
-        period = request.query_params.get("period", "today").lower()
+        crop_type = request.query_params.get("crop_type")  # Optional
+        period = request.query_params.get("period", "").lower()  # Optional
         today = date.today()
 
-        # Date range based on period
+        # Determine date range based on period
+        start_date = end_date = None
         if period == "today":
             start_date = end_date = today
         elif period == "week":
@@ -358,18 +388,20 @@ class CommodityTransactionSummaryAPIView(APIView):
         elif period == "month":
             start_date = today.replace(day=1)
             end_date = today
+        elif period == "all_time" or not period:
+            start_date = end_date = None
         else:
             return Response({"error": "Invalid period"}, status=400)
 
-        # Primary query
-        sales = DetailedSale.objects.filter(
-            user=user,
-            sale_date__range=[start_date, end_date]
-        ).order_by("-sale_date", "-created_at")
+        # Base query
+        sales = DetailedSale.objects.filter(user=user).order_by("-sale_date", "-created_at")
+
+        # Apply time filter if applicable
+        if start_date and end_date:
+            sales = sales.filter(sale_date__range=[start_date, end_date])
 
         fallback_used = False
 
-        # Fallback if no data
         if not sales.exists():
             latest_sale = DetailedSale.objects.filter(user=user).order_by("-sale_date", "-created_at").first()
             if latest_sale:
@@ -398,6 +430,8 @@ class CommodityTransactionSummaryAPIView(APIView):
                 payment_status = "Partial"
 
             for crop in sale.crops:
+                if crop_type and crop.get("crop_name", "").lower() != crop_type.lower():
+                    continue
                 transactions.append({
                     "crop_name": crop.get("crop_name", ""),
                     "bags": f"{crop.get('bags', 0)} bags × {crop.get('weight_per_bag', 0)}kg",
@@ -409,85 +443,12 @@ class CommodityTransactionSummaryAPIView(APIView):
 
         return Response({
             "fallback": fallback_used,
-            "period": period,
+            "period": period or "all_time",
+            "crop_type": crop_type or "all_crops",
             "transactions": transactions
         })
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# from rest_framework.views import APIView
-# from rest_framework.response import Response
-# from rest_framework import permissions
-# from collections import defaultdict
-# from django.utils.timezone import localtime, now
-# from datetime import timedelta
-# from django.db.models.functions import TruncDate
-# from .models import DetailedSale
-# from .permissions import IsPaidMember
-
-# class BuyerLedgerDailyAPIView(APIView):
-#     permission_classes = [permissions.IsAuthenticated, IsPaidMember]
-
-#     def get(self, request):
-#         user = request.user
-#         today = localtime(now()).date()
-#         yesterday = today - timedelta(days=1)
-
-#         def format_time(dt):
-#             return localtime(dt).strftime("%I:%M %p")
-
-#         def get_entries(target_date):
-#             # Annotate sale_date to extract just the date part
-#             sales = DetailedSale.objects.annotate(
-#                 sale_day=TruncDate('sale_date')
-#             ).filter(user=user, sale_day=target_date)
-
-#             entries = []
-
-#             for sale in sales:
-#                 buyer_name = sale.buyer_details.get("buyer_name", "Unknown")
-#                 paid_amount = sale.payment_details.get("paid_amount", 0)
-
-#                 if paid_amount > 0:
-#                     entries.append({
-#                         "type": "received",
-#                         "amount": paid_amount,
-#                         "from": buyer_name,
-#                         "time": format_time(sale.sale_date)
-#                     })
-
-#                 for crop in sale.crops:
-#                     entries.append({
-#                         "type": "sale",
-#                         "crop": crop.get("crop_name"),
-#                         "bags": crop.get("bags"),
-#                         "to": buyer_name,
-#                         "time": format_time(sale.sale_date)
-#                     })
-
-#             # Sort by time for consistent ordering
-#             return sorted(entries, key=lambda x: x["time"])
-
-#         data = {
-#             "today": get_entries(today),
-#             "yesterday": get_entries(yesterday)
-#         }
-
-#         return Response(data)
 
 
 from rest_framework.views import APIView
@@ -686,55 +647,74 @@ class BuyerLedgerLatestAPIView(APIView):
         ledger[str(latest_date)] = sorted(ledger[str(latest_date)], key=lambda x: x["time"])
 
         return Response(dict(ledger))
-
+   
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import permissions
 from collections import defaultdict
 from .models import DetailedSale
+from shop.models import Buyer
 from .permissions import IsPaidMember
 from django.utils.dateformat import format as date_format
+from django.db.models import Q
 
 class BuyerLedgerSummaryAPIView(APIView):
     # permission_classes = [permissions.IsAuthenticated, IsPaidMember]
 
     def get(self, request):
         user = request.user
-        sales = DetailedSale.objects.filter(user=user)
+        buyer_id_or_name = request.query_params.get("buyer_id")
+
+        # Filter by buyer if ID or name is provided
+        if buyer_id_or_name:
+            try:
+                buyer = Buyer.objects.get(
+                    Q(id=buyer_id_or_name) | Q(name__iexact=buyer_id_or_name),
+                    user=user
+                )
+                sales = DetailedSale.objects.filter(user=user, buyer=buyer)
+            except Buyer.DoesNotExist:
+                return Response({"message": "Buyer not found"}, status=404)
+        else:
+            sales = DetailedSale.objects.filter(user=user)
 
         if not sales.exists():
             return Response({"message": "No sales found"}, status=404)
 
-        total_sale = 0
-        total_received = 0
-     
-        last_sale_date = None
-
-        for sale in sales:
-            total_sale += sale.total_sale_amount
-            total_received += sale.payment_details.get("paid_amount", 0)
-           
-
-            if not last_sale_date or sale.sale_date > last_sale_date:
-                last_sale_date = sale.sale_date
-
-        total_due = total_sale - total_received
-
-        return Response({
-            "total_sale_value": round(total_sale, 2),
-            "total_received": round(total_received, 2),
-            "total_due": round(total_due, 2),
-        
-            "last_sale_date": date_format(last_sale_date, "d M Y") if last_sale_date else None
+        summary = defaultdict(lambda: {
+            "total_sale_value": 0,
+            "total_received": 0,
+            "total_due": 0,
+            "last_sale_date": None
         })
 
+        for sale in sales:
+            # 🛡️ Safe fallback for buyer name
+            buyer_name = (
+                getattr(sale.buyer, "name", None) if hasattr(sale, "buyer") and sale.buyer
+                else sale.buyer_details.get("buyer_name", "Unknown")
+            )
 
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import permissions
-from collections import defaultdict
-from .models import DetailedSale
-from .permissions import IsPaidMember
+            summary_data = summary[buyer_name]
+
+            summary_data["total_sale_value"] += sale.total_sale_amount or 0
+            summary_data["total_received"] += sale.payment_details.get("paid_amount", 0) or 0
+
+            if not summary_data["last_sale_date"] or sale.sale_date > summary_data["last_sale_date"]:
+                summary_data["last_sale_date"] = sale.sale_date
+
+        # 🧾 Format response
+        formatted_summary = {
+            buyer: {
+                "total_sale_value": round(data["total_sale_value"], 2),
+                "total_received": round(data["total_received"], 2),
+                "total_due": round(data["total_sale_value"] - data["total_received"], 2),
+                "last_sale_date": date_format(data["last_sale_date"], "d M Y") if data["last_sale_date"] else None
+            }
+            for buyer, data in summary.items()
+        }
+
+        return Response(formatted_summary)
 
 class CropChartDataAPIView(APIView):
     # permission_classes = [permissions.IsAuthenticated, IsPaidMember]
@@ -765,3 +745,63 @@ class CropChartDataAPIView(APIView):
             "total_amounts": total_amounts,
             "total_bags": total_bags
         })
+    
+
+    from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import permissions
+from collections import defaultdict
+from .models import DetailedSale
+from .permissions import IsPaidMember
+from django.utils.dateformat import format as date_format
+
+class BuyerLedgerSummaryAPIView(APIView):
+    # permission_classes = [permissions.IsAuthenticated, IsPaidMember]
+
+    def get(self, request):
+        user = request.user
+        buyer_query = request.query_params.get("buyer_id")
+
+        # Filter by buyer name (case-insensitive) from buyer_details
+        if buyer_query:
+            sales = DetailedSale.objects.filter(
+                user=user,
+                buyer_details__buyer_name__iexact=buyer_query
+            )
+        else:
+            sales = DetailedSale.objects.filter(user=user)
+
+        if not sales.exists():
+            return Response({"message": "No sales found"}, status=404)
+
+        summary = defaultdict(lambda: {
+            "total_sale_value": 0,
+            "total_received": 0,
+            "total_due": 0,
+            "last_sale_date": None
+        })
+
+        for sale in sales:
+            buyer_info = sale.buyer_details or {}
+            buyer_name = buyer_info.get("buyer_name", "Unknown")
+
+            summary_data = summary[buyer_name]
+            summary_data["total_sale_value"] += sale.total_sale_amount or 0
+
+            paid_amount = sale.payment_details.get("paid_amount", 0) if sale.payment_details else 0
+            summary_data["total_received"] += paid_amount
+
+            if not summary_data["last_sale_date"] or sale.sale_date > summary_data["last_sale_date"]:
+                summary_data["last_sale_date"] = sale.sale_date
+
+        formatted_summary = {
+            buyer: {
+                "total_sale_value": round(data["total_sale_value"], 2),
+                "total_received": round(data["total_received"], 2),
+                "total_due": round(data["total_sale_value"] - data["total_received"], 2),
+                "last_sale_date": date_format(data["last_sale_date"], "d M Y") if data["last_sale_date"] else None
+            }
+            for buyer, data in summary.items()
+        }
+
+        return Response(formatted_summary)

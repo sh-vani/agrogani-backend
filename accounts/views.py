@@ -382,7 +382,7 @@ class RecentActivityAPI(APIView):
             user=request.user
         ).exclude(
             event_type__icontains="/recent-activities/"
-        ).order_by("-timestamp")[:20]
+        ).order_by("-timestamp")[:5]
 
         serializer = ActivityLogSerializer(logs, many=True)
         return Response(serializer.data)

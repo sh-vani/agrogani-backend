@@ -62,3 +62,18 @@ class DetailedSaleSerializer(serializers.ModelSerializer):
 
 
 
+from rest_framework import serializers
+from .models import DetailedSale
+
+class BuyerNameSerializer(serializers.ModelSerializer):
+    buyer_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = DetailedSale
+        fields = ['buyer_name']
+
+    def get_buyer_name(self, obj):
+        return obj.buyer_details.get('buyer_name', None)
+
+
+

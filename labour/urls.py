@@ -25,7 +25,6 @@ path('attendance/daily-overview/', DailyAttendanceOverview.as_view(), name='atte
 
 
 
-
     # PAYMENT
 #     path('payment/', PaymentListView.as_view(), name='payment-list'),
 #     path('payment/add/', PaymentCreateView.as_view(), name='payment-add'),

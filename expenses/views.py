@@ -234,7 +234,6 @@ class AllShopLedgerAPIView(APIView):
     def get(self, request):
         user = request.user
         expenses = Expense.objects.filter(user=user)
-
         from_date = request.GET.get("from_date")
         to_date = request.GET.get("to_date")
         expense_type = request.GET.get("expense_type")

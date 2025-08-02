@@ -18,6 +18,7 @@ class Expense(models.Model):
         ('bank', 'Bank'),
     ]
 
+
     PAYMENT_TYPE = [
         ('cash', 'Cash'),
         ('credit', 'Credit'),
@@ -40,10 +41,8 @@ class Expense(models.Model):
     labour_name = models.CharField(max_length=100, blank=True, null=True)
     work_description = models.TextField(blank=True, null=True)
     daily_wage = models.DecimalField(max_digits=7, decimal_places=2, blank=True, null=True)
-
     shop = models.ForeignKey('shop.Shop', on_delete=models.SET_NULL, null=True, blank=True)
     seed_name = models.CharField(max_length=100, blank=True, null=True)
-
     equipment_name = models.CharField(max_length=100, blank=True, null=True)
     equipment_type = models.CharField(max_length=20, blank=True, null=True)
     vendor_name = models.CharField(max_length=100, blank=True, null=True)

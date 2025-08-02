@@ -43,7 +43,8 @@ class UserActivityMiddleware:
             "seller": "Seller",
             "ledger": "Ledger",
             "advisory": "Advisory",
-            "userprofile": "Profile"
+            "userprofile": "Profile",
+            "plan":"Plan",
         }
         for key in mapping:
             if key in path.lower():
@@ -55,6 +56,8 @@ class UserActivityMiddleware:
 
         if "crop/add" in path_lower and method == "POST":
             return "Crop Added"
+        if "crop/my-crops" in path_lower and method == "GET":
+            return "Crop View"
         if "expense" in path_lower and method == "POST":
             return "Expense Recorded"
         if "task/complete" in path_lower and method == "POST":
@@ -73,6 +76,14 @@ class UserActivityMiddleware:
             return "Advisory Viewed"
         if "userprofile/profile" in path_lower and method == "GET":
             return "Profile Viewed"
+        if "plan/plans" in path_lower and method == "GET":
+            return "Plan Viewed"
+                   # For shop list
+        if "shop/list" in path_lower and method == "GET":
+            return " viewed the shop list"
+   
+        if "detailed-sale/add" in path_lower and method == "POST":
+             return "Detailed Sale Added"
 
         return f"{method} {path}"
 
@@ -88,6 +99,12 @@ class UserActivityMiddleware:
             return f"{full_name} marked a task as complete"
         if "sales/add" in path_lower and method == "POST":
             return f"{full_name} added a sale record"
+        if "detailed-sale/add" in path_lower and method == "POST":
+            return f"{full_name} added a detailed sale record"
+        if "shop/list" in path_lower and method == "GET":
+         return f"{full_name} viewed the shop list"
+        if "crop/my-crops" in path_lower and method == "GET":
+            return "Crop View"
         if "report" in path_lower and method == "GET":
             return f"{full_name} viewed a report"
         if "buyer/add" in path_lower and method == "POST":
@@ -100,6 +117,13 @@ class UserActivityMiddleware:
             return f"{full_name} viewed advisory contacts"
         if "userprofile/profile" in path_lower and method == "GET":
             return f"{full_name} viewed profile"
+        if "plan/plans" in path_lower and method == "GET":
+            return "Plan Viewed"
+     
+
+# For detailed sale
+        if "detailed-sale/add" in path_lower and method == "POST":
+             return "Detailed Sale Added"
 
         return f"{full_name} performed {method} on {path}"
 
