@@ -91,7 +91,6 @@ class DeleteFertilizerShopView(APIView):
 
 
 # advisory/views.py
-
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -106,19 +105,15 @@ class AdvisoryShopCountView(APIView):
 
         advisor_total = Advisory.objects.count()
         advisor_today = Advisory.objects.filter(created_at__date=today).count()
-
         fertilizer_total = FertilizerShop.objects.count()
 
-        return Response({
-            "advisors": {
-                "total": advisor_total,
-                "added_today": advisor_today
-            },
-            "fertilizer_shops": {
-                "total": fertilizer_total
-            }
-        })
+        data = [
+            {"title": "Total Advisors", "count": advisor_total},
+            {"title": "Advisors Added Today", "count": advisor_today},
+            {"title": "Total Fertilizer Shops", "count": fertilizer_total},
+        ]
 
+        return Response(data)
 
 
 

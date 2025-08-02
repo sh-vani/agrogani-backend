@@ -1,5 +1,3 @@
-
-
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -23,46 +21,48 @@ class SummaryAPIView(APIView):
         month = int(month) if month else today.month
         year = int(year) if year else today.year
 
-        # Current month summary
+        # Current month date range
         start_date = datetime(year, month, 1).date()
         end_date = today.date() if month == today.month else datetime(year, month + 1, 1).date()
 
-        quick_sale = QuickSale.objects.filter(
-            user=user, created_at__date__range=[start_date, end_date]
-        ).aggregate(total=Sum('amount'))['total'] or 0
+        # Previous month date range
+        prev_start = (start_date - relativedelta(months=1))
+        prev_end = start_date
 
-        detailed_sale = DetailedSale.objects.filter(
-            user=user, sale_date__range=[start_date, end_date]
-        ).aggregate(total=Sum('total_sale_amount'))['total'] or 0
-
+        # Current month revenue & expense
+        quick_sale = QuickSale.objects.filter(user=user, created_at__date__range=[start_date, end_date]).aggregate(total=Sum('amount'))['total'] or 0
+        detailed_sale = DetailedSale.objects.filter(user=user, sale_date__range=[start_date, end_date]).aggregate(total=Sum('total_sale_amount'))['total'] or 0
         total_revenue = quick_sale + detailed_sale
 
-        total_expense = Expense.objects.filter(
-            user=user, date__range=[start_date, end_date]
-        ).aggregate(total=Sum('paying_amount'))['total'] or 0
-
+        total_expense = Expense.objects.filter(user=user, date__range=[start_date, end_date]).aggregate(total=Sum('paying_amount'))['total'] or 0
         profit = total_revenue - total_expense
 
-        # Last 12 months graph data
+        # Previous month revenue & expense
+        prev_q_sale = QuickSale.objects.filter(user=user, created_at__date__range=[prev_start, prev_end]).aggregate(total=Sum('amount'))['total'] or 0
+        prev_d_sale = DetailedSale.objects.filter(user=user, sale_date__range=[prev_start, prev_end]).aggregate(total=Sum('total_sale_amount'))['total'] or 0
+        prev_revenue = prev_q_sale + prev_d_sale
+
+        prev_expense = Expense.objects.filter(user=user, date__range=[prev_start, prev_end]).aggregate(total=Sum('paying_amount'))['total'] or 0
+        prev_profit = prev_revenue - prev_expense
+
+        # Percentage changes
+        revenue_percent = ((total_revenue - prev_revenue) / prev_revenue * 100) if prev_revenue > 0 else 0
+        expense_percent = ((total_expense - prev_expense) / prev_expense * 100) if prev_expense > 0 else 0
+        profit_percent = ((profit - prev_profit) / prev_profit * 100) if prev_profit > 0 else 0
+        overall_percent = ((profit - prev_profit) / prev_profit * 100) if prev_profit > 0 else 0
+
+        # Last 12 months graph
         graph_data = []
         for i in range(12):
             ref_date = today - relativedelta(months=11 - i)
             m_start = datetime(ref_date.year, ref_date.month, 1).date()
             m_end = (m_start + relativedelta(months=1))
 
-            q_sale = QuickSale.objects.filter(
-                user=user, created_at__date__range=[m_start, m_end]
-            ).aggregate(total=Sum('amount'))['total'] or 0
-
-            d_sale = DetailedSale.objects.filter(
-                user=user, sale_date__range=[m_start, m_end]
-            ).aggregate(total=Sum('total_sale_amount'))['total'] or 0
-
+            q_sale = QuickSale.objects.filter(user=user, created_at__date__range=[m_start, m_end]).aggregate(total=Sum('amount'))['total'] or 0
+            d_sale = DetailedSale.objects.filter(user=user, sale_date__range=[m_start, m_end]).aggregate(total=Sum('total_sale_amount'))['total'] or 0
             revenue = q_sale + d_sale
 
-            expense = Expense.objects.filter(
-                user=user, date__range=[m_start, m_end]
-            ).aggregate(total=Sum('paying_amount'))['total'] or 0
+            expense = Expense.objects.filter(user=user, date__range=[m_start, m_end]).aggregate(total=Sum('paying_amount'))['total'] or 0
 
             graph_data.append({
                 "month": month_name[m_start.month],
@@ -75,12 +75,23 @@ class SummaryAPIView(APIView):
         return Response({
             "month": month,
             "year": year,
-            "total_revenue": round(total_revenue, 2),
-            "total_expense": round(total_expense, 2),
-            "profit": round(profit, 2),
+            "overall_change_percent": round(overall_percent, 2),
+            "financial_summary": {
+                "revenue": {
+                    "amount": round(total_revenue, 2),
+                    "percent_change": round(revenue_percent, 2)
+                },
+                "expenses": {
+                    "amount": round(total_expense, 2),
+                    "percent_change": round(expense_percent, 2)
+                },
+                "profit": {
+                    "amount": round(profit, 2),
+                    "percent_change": round(profit_percent, 2)
+                }
+            },
             "graph_data": graph_data
         })
-
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
