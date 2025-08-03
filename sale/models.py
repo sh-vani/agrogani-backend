@@ -1,7 +1,7 @@
 from django.db import models
 
 # Create your models here.
-
+from shop.models import Buyer
 from django.db import models
 from django.conf import settings
 
@@ -39,6 +39,7 @@ class QuickSale(models.Model):
 
 class DetailedSale(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    buyer = models.ForeignKey(Buyer, on_delete=models.SET_NULL, null=True, blank=True)
     sale_date = models.DateField()
     
     crops = models.JSONField()  # List of crop dicts

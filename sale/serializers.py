@@ -37,29 +37,28 @@ class QuickSaleSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ['user', 'created_at']
 
-class DetailedSaleSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = DetailedSale
-        fields = '__all__'
-        read_only_fields = ['user', 'total_expenses', 'net_income', 'created_at']
+# class DetailedSaleSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = DetailedSale
+#         fields = '__all__'
+#         read_only_fields = ['user', 'total_expenses', 'net_income', 'created_at']
 
-    def create(self, validated_data):
-        transport_details = validated_data.get('transport_details', {})
+#     def create(self, validated_data):
+#         transport_details = validated_data.get('transport_details', {})
         
-        # Safely convert to Decimal
-        transport_cost = Decimal(str(transport_details.get('transport_cost', 0) or 0))
-        loading_unloading_cost = Decimal(str(transport_details.get('loading_unloading_cost', 0) or 0))
-        total_sale_amount = Decimal(str(validated_data.get('total_sale_amount', 0) or 0))
+#         # Safely convert to Decimal
+#         transport_cost = Decimal(str(transport_details.get('transport_cost', 0) or 0))
+#         loading_unloading_cost = Decimal(str(transport_details.get('loading_unloading_cost', 0) or 0))
+#         total_sale_amount = Decimal(str(validated_data.get('total_sale_amount', 0) or 0))
 
-        # Calculate using Decimal
-        total_expenses = transport_cost + loading_unloading_cost
-        net_income = total_sale_amount - total_expenses
+#         # Calculate using Decimal
+#         total_expenses = transport_cost + loading_unloading_cost
+#         net_income = total_sale_amount - total_expenses
 
-        validated_data['total_expenses'] = total_expenses
-        validated_data['net_income'] = net_income
+#         validated_data['total_expenses'] = total_expenses
+#         validated_data['net_income'] = net_income
 
-        return super().create(validated_data)
-
+#         return super().create(validated_data)
 
 
 from rest_framework import serializers
@@ -77,3 +76,57 @@ class BuyerNameSerializer(serializers.ModelSerializer):
 
 
 
+from decimal import Decimal
+from rest_framework import serializers
+from .models import DetailedSale
+from shop.models import Buyer
+
+class DetailedSaleSerializer(serializers.ModelSerializer):
+    buyer_name = serializers.SerializerMethodField()
+    buyer_mobile = serializers.SerializerMethodField()
+    buyer_market_location = serializers.SerializerMethodField()
+
+    class Meta:
+        model = DetailedSale
+        fields = '__all__'
+        read_only_fields = ['user', 'total_expenses', 'net_income', 'created_at', 'buyer']
+
+    def get_buyer_name(self, obj):
+        return obj.buyer.name if obj.buyer else obj.buyer_details.get("buyer_name", "Unknown")
+
+    def get_buyer_mobile(self, obj):
+        return obj.buyer.mobile if obj.buyer else obj.buyer_details.get("buyer_mobile", "")
+
+    def get_buyer_market_location(self, obj):
+        return obj.buyer.market_location if obj.buyer else obj.buyer_details.get("market_location", "")
+
+    def create(self, validated_data):
+        buyer_details = validated_data.get('buyer_details', {})
+        buyer_name = buyer_details.get("buyer_name")
+
+        # ✅ Link or create buyer in Buyer table
+        if buyer_name:
+            buyer_obj, created = Buyer.objects.get_or_create(
+                name__iexact=buyer_name,  # Case-insensitive match
+                user=self.context['request'].user,
+                defaults={
+                    "name": buyer_name,
+                    "mobile": buyer_details.get('buyer_mobile', ''),
+                    "market_location": buyer_details.get('market_location', '')
+                }
+            )
+            validated_data['buyer'] = buyer_obj
+
+        # ✅ Calculate expenses and net income
+        transport_details = validated_data.get('transport_details', {})
+        transport_cost = Decimal(str(transport_details.get('transport_cost', 0) or 0))
+        loading_unloading_cost = Decimal(str(transport_details.get('loading_unloading_cost', 0) or 0))
+        total_sale_amount = Decimal(str(validated_data.get('total_sale_amount', 0) or 0))
+
+        total_expenses = transport_cost + loading_unloading_cost
+        net_income = total_sale_amount - total_expenses
+
+        validated_data['total_expenses'] = total_expenses
+        validated_data['net_income'] = net_income
+
+        return super().create(validated_data)

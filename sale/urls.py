@@ -47,10 +47,4 @@ path('buyer-ledger-latest/', BuyerLedgerLatestAPIView.as_view(), name='buyer-led
 
 
 
-from .views import CropChartDataAPIView
-
-urlpatterns += [
-    path('ledger/crops/chart/', CropChartDataAPIView.as_view(), name='crop-chart-data'),
-]
-
 
