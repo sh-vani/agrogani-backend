@@ -4,11 +4,7 @@ from .models import Labour, Attendance
 # , Payment
 
 
-class LabourSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Labour
-        fields = '__all__'
-        read_only_fields = ['user']
+
 
 
 from rest_framework import serializers
@@ -18,6 +14,10 @@ class LabourSerializer(serializers.ModelSerializer):
     class Meta:
         model = Labour
         fields = '__all__'
+        read_only_fields = ['user']  # 👈 This line fixes the error
+
+
+        
 
 class AttendanceListSerializer(serializers.ModelSerializer):
     labour = LabourSerializer(read_only=True)
