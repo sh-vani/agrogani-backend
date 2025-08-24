@@ -6,7 +6,8 @@ from .serializers import LabourSerializer
 # , PaymentSerializer
 from rest_framework.response import Response
 from rest_framework import status
-
+from rest_framework.exceptions import ValidationError # <-- Add this line
+from rest_framework.permissions import IsAuthenticated
 
 # LABOUR VIEW
 
@@ -34,12 +35,7 @@ class LabourCreateView(generics.CreateAPIView):
             "data": serializer.data
         }, status=status.HTTP_201_CREATED)
 
-# class LabourCreateView(generics.CreateAPIView):
-#     serializer_class = LabourSerializer
-#     permission_classes = [permissions.IsAuthenticated]
 
-#     def perform_create(self, serializer):
-#         serializer.save(user=self.request.user)
 
 class LabourRetrieveView(generics.RetrieveAPIView):
     serializer_class = LabourSerializer
@@ -72,29 +68,77 @@ from .serializers import (
 )
 
 # 📥 Create
-class AttendanceCreateView(generics.CreateAPIView):
-    queryset = Attendance.objects.all()
-    serializer_class = AttendanceCreateUpdateSerializer
+# class AttendanceCreateView(generics.CreateAPIView):
+#     queryset = Attendance.objects.all()
+#     serializer_class = AttendanceCreateUpdateSerializer
  
-# 📃 List
+class AttendanceCreateView(generics.CreateAPIView):
+    serializer_class = AttendanceCreateUpdateSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_serializer_context(self):
+        return {'request': self.request}
+
+    def perform_create(self, serializer):
+        labour = serializer.validated_data['labour']
+        if labour.user != self.request.user:
+            raise ValidationError("Unauthorized labour.")
+        serializer.save()
+
 class AttendanceListView(generics.ListAPIView):
-    queryset = Attendance.objects.select_related('labour').all()
     serializer_class = AttendanceListSerializer
+    permission_classes = [IsAuthenticated]
 
-# 🔄 Update
-class AttendanceUpdateView(generics.UpdateAPIView):
-    queryset = Attendance.objects.all()
-    serializer_class = AttendanceCreateUpdateSerializer
-
-# ❌ Delete
-class AttendanceDeleteView(generics.DestroyAPIView):
-    queryset = Attendance.objects.all()
-    serializer_class = AttendanceCreateUpdateSerializer
-
-# 🔍 Retrieve (Optional)
+    def get_queryset(self):
+        return Attendance.objects.filter(labour__user=self.request.user)
+    
 class AttendanceRetrieveView(generics.RetrieveAPIView):
-    queryset = Attendance.objects.select_related('labour').all()
     serializer_class = AttendanceListSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Attendance.objects.filter(labour__user=self.request.user)
+    
+class AttendanceUpdateView(generics.UpdateAPIView):
+    serializer_class = AttendanceCreateUpdateSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Attendance.objects.filter(labour__user=self.request.user)
+
+    def get_serializer_context(self):
+        return {'request': self.request}
+
+
+class AttendanceDeleteView(generics.DestroyAPIView):
+    serializer_class = AttendanceCreateUpdateSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Attendance.objects.filter(labour__user=self.request.user)
+
+
+# # 📃 List
+# class AttendanceListView(generics.ListAPIView):
+#     queryset = Attendance.objects.select_related('labour').all()
+#     serializer_class = AttendanceListSerializer
+
+# # 🔄 Update
+# class AttendanceUpdateView(generics.UpdateAPIView):
+#     queryset = Attendance.objects.all()
+#     serializer_class = AttendanceCreateUpdateSerializer
+
+# # ❌ Delete
+# class AttendanceDeleteView(generics.DestroyAPIView):
+#     queryset = Attendance.objects.all()
+#     serializer_class = AttendanceCreateUpdateSerializer
+
+# # 🔍 Retrieve (Optional)
+# class AttendanceRetrieveView(generics.RetrieveAPIView):
+#     queryset = Attendance.objects.select_related('labour').all()
+#     serializer_class = AttendanceListSerializer
+
+
 
 
 
@@ -107,6 +151,9 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from datetime import datetime
 from .models import Labour, Attendance
+
+
+
 
 class DailyAttendanceOverview(APIView):
     permission_classes = [IsAuthenticated]
@@ -132,7 +179,7 @@ class DailyAttendanceOverview(APIView):
                 "mobile": labour.mobile,
                 "daily_wage": str(labour.daily_wage),
                 "gender": labour.gender,
-                "status": attendance.status if attendance else None,
+                "status": attendance.status if attendance else "not_marked",
                 "date": date_str
             })
 
