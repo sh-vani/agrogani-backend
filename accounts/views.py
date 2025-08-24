@@ -303,6 +303,36 @@ class ResetPasswordView(APIView):
             traceback.print_exc()  # Will print full error in terminal
             return Response({'error': 'Internal Server Error: ' + str(e)}, status=500)
 
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from .serializers import ChangePasswordSerializer
+
+class ChangePasswordView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = ChangePasswordSerializer(data=request.data)
+        if serializer.is_valid():
+            old_password = serializer.validated_data['old_password']
+            new_password = serializer.validated_data['new_password']
+            confirm_password = serializer.validated_data['confirm_password']
+
+            user = request.user
+
+            if not user.check_password(old_password):
+                return Response({"detail": "Old password is incorrect."}, status=400)
+
+            if new_password != confirm_password:
+                return Response({"detail": "Passwords do not match."}, status=400)
+
+            user.set_password(new_password)
+            user.save()
+
+            return Response({"detail": "Password changed successfully!"}, status=200)
+
+        return Response(serializer.errors, status=400)
 
 
 
