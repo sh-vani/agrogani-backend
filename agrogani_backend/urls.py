@@ -57,3 +57,14 @@ from django.conf import settings
 from django.conf.urls.static import static
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
+from django.conf.urls import handler404, handler500
+from django.http import JsonResponse
+
+def custom_404(request, exception=None):
+    return JsonResponse({'error': 'API endpoint not found'}, status=404)
+
+def custom_500(request):
+    return JsonResponse({'error': 'Internal server error'}, status=500)
+
+handler404 = 'agrogani_backend.urls.custom_404'
+handler500 = 'agrogani_backend.urls.custom_500'

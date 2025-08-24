@@ -67,13 +67,45 @@ class ChangePasswordSerializer(serializers.Serializer):
 
 
 
-# activeite recent
+# # activeite recent
+# from rest_framework import serializers
+# from .models import ActivityLog
+
+
+# # serializers.py
+# class ActivityLogSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = ActivityLog
+#         fields = ["event_type", "description", "module", "icon_type", "timestamp"]
+
+
+# accounts/serializers.py
+
 from rest_framework import serializers
 from .models import ActivityLog
 
-
-# serializers.py
 class ActivityLogSerializer(serializers.ModelSerializer):
+    """
+    Serializer for the ActivityLog model.
+    """
+    # Format the timestamp for better readability on the frontend
+    timestamp_display = serializers.SerializerMethodField()
+
     class Meta:
         model = ActivityLog
-        fields = ["event_type", "description", "module", "icon_type", "timestamp"]
+        fields = [
+            "id",
+            "event_type",
+            "description",
+            "module",
+            "icon_type",
+            "details",
+            "timestamp",
+            "timestamp_display"
+        ]
+
+    def get_timestamp_display(self, obj):
+        # Example: "2 hours ago", "Yesterday"
+        # You can use django.utils.timesince.timesince here for a "X time ago" format
+        from django.utils.timesince import timesince
+        return f"{timesince(obj.timestamp)} ago"

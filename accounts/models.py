@@ -84,27 +84,45 @@ class RazorpayLog(models.Model):
  
 # Actvity lo
 
+# accounts/models.py
 
+from django.db import models
+from django.conf import settings
+from django.utils.timezone import now
 
 class ActivityLog(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    module = models.CharField(max_length=50)         # e.g. "Crop", "Sale"
-    event_type = models.CharField(max_length=100)    # e.g. "Added Sale"
-    description = models.TextField()                 # Summary for frontend
-    icon_type = models.CharField(max_length=50, blank=True)
-    reference_id = models.CharField(max_length=100, blank=True)
-    extra_info = models.JSONField(blank=True, null=True)
-    timestamp = models.DateTimeField(auto_now_add=True)
-        # Optional internal-only
-    was_accessed = models.BooleanField(default=False)
-    accessed_at = models.DateTimeField(null=True, blank=True)
+    """
+    Model to log user activities throughout the application.
+    """
+    # The user who performed the action
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+
+    # A short, user-friendly title for the event (e.g., 'Expense Added')
+    event_type = models.CharField(max_length=100)
+
+    # A more detailed description (e.g., 'Fertilizer Purchase - Yesterday')
+    description = models.CharField(max_length=255)
+
+    # The module this activity belongs to (e.g., 'Expense', 'Task')
+    module = models.CharField(max_length=50)
+
+    # An identifier for the frontend to show a specific icon (e.g., 'expense', 'irrigation')
+    icon_type = models.CharField(max_length=50, blank=True, null=True)
+
+    # A JSON field to store extra, structured data (e.g., {'amount': 120.50, 'currency': 'INR'})
+    details = models.JSONField(null=True, blank=True)
+
+    # The timestamp when the event occurred
+    timestamp = models.DateTimeField(default=now)
+
+    class Meta:
+        # Order logs by the most recent first
+        ordering = ['-timestamp']
+        verbose_name = "Activity Log"
+        verbose_name_plural = "Activity Logs"
 
     def __str__(self):
-        return f"[{self.module}] {self.user.username} - {self.event_type}"
-
-
-
-
+        return f"{self.user.username} - {self.event_type} at {self.timestamp.strftime('%Y-%m-%d %H:%M')}"
 
 
 

@@ -8,12 +8,12 @@ urlpatterns = [
     path('register/', RegisterView.as_view()),
     path('verify-otp/', VerifyOTPView.as_view()),
     path('set-password/', SetPasswordView.as_view()),
-     path('login/', LoginView.as_view()),
+    path('login/', LoginView.as_view()),
         
-  path('forgot-password/', ForgotPasswordRequestView.as_view(), name='forgot-password'),
+    path('forgot-password/', ForgotPasswordRequestView.as_view(), name='forgot-password'),
     path('forgot/verify-otp/', ForgotPasswordVerifyOTPView.as_view(), name='forgot-password-verify-otp'),
     path('reset-password/', ResetPasswordView.as_view(), name='reset-password'),
- path('change-password/', ChangePasswordView.as_view(), name='change-password'),
+    path('change-password/', ChangePasswordView.as_view(), name='change-password'),
 
 # razorpay path
     path('create-plan-order/', CreatePlanOrderAPIView.as_view(), name='create-plan-order'),
