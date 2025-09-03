@@ -443,3 +443,50 @@ class RecentActivityAPI(APIView):
         serializer = ActivityLogSerializer(logs, many=True)
         
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+
+    # admin side api
+
+    from rest_framework.views import APIView
+from rest_framework.response import Response
+from django.db.models import Sum, Count
+from .models import RazorpayLog, User
+from advisory.models import Advisory
+
+class DashboardSummaryAPIView(APIView):
+    # permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        total_transactions = RazorpayLog.objects.filter(status='success').count()
+        active_users = User.objects.filter(is_active=True).count()
+        total_revenue = RazorpayLog.objects.filter(status='success').aggregate(Sum('amount'))['amount__sum'] or 0
+        advisor_count = Advisory.objects.count()
+
+        return Response({
+            "total_transactions": total_transactions,
+            "active_users": active_users,
+            "total_revenue": total_revenue,
+            "advisor_count": advisor_count
+        })
+from django.utils.timezone import now, timedelta
+from django.db.models.functions import TruncWeek
+
+class UserActivityAPIView(APIView):
+    # permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        six_weeks_ago = now() - timedelta(weeks=6)
+        users = User.objects.filter(date_joined__gte=six_weeks_ago)
+
+        weekly_data = users.annotate(week=TruncWeek('date_joined')).values('week').annotate(
+            new_registrations=Count('id'),
+            active_users=Count('id')  # You can refine this based on actual activity logs
+        ).order_by('week')
+
+        return Response(weekly_data)
+class UserDistributionAPIView(APIView):
+    # permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        distribution = User.objects.values('plan__name').annotate(count=Count('id'))
+        return Response(distribution)

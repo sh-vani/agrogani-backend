@@ -30,12 +30,21 @@
 from decimal import Decimal
 from rest_framework import serializers
 from .models import QuickSale, DetailedSale
+from django.conf import settings
+
+# class QuickSaleSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = QuickSale
+#         fields = '__all__'
+#         read_only_fields = ['user', 'created_at']
+
 
 class QuickSaleSerializer(serializers.ModelSerializer):
     class Meta:
         model = QuickSale
-        fields = '__all__'
+        fields = ['id', 'crop_name', 'amount', 'note', 'receipt', 'created_at']
         read_only_fields = ['user', 'created_at']
+
 
 # class DetailedSaleSerializer(serializers.ModelSerializer):
 #     class Meta:
