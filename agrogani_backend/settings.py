@@ -30,26 +30,26 @@ DEBUG = True
 
 
 
-# LOGGING = {
-#     'version': 1,
-#     'disable_existing_loggers': False,
-#     'handlers': {
-#         'console':{
-#             'class': 'logging.StreamHandler',
-#         },
-#         'file': {
-#             'level': 'DEBUG',
-#             'class': 'logging.FileHandler',
-#             'filename': 'django_debug.log',
-#         },
-#     },
-#     'loggers': {
-#         'django': {
-#             'handlers': ['console', 'file'],
-#             'level': 'DEBUG',
-#         },
-#     },
-# }
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console':{
+            'class': 'logging.StreamHandler',
+        },
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': 'django_debug.log',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
+        },
+    },
+}
 
 
 
@@ -78,6 +78,7 @@ INSTALLED_APPS = [
       'shop',
       'reports',
       'advisory',
+      'info',
        'rest_framework',
        'adminpanel',
        'adminauth'
@@ -264,4 +265,14 @@ RAZORPAY_KEY_SECRET = "TkpZXRLwI2vqBg8put1DBJCQ"
 
 from decouple import config
 WEATHER_API_KEY="be5a3a3aad7ded2bde2e15e8895c7cf7"
+
+
+
+# settings.py
+
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    
+]
 

@@ -14,6 +14,10 @@ class UserProfile(models.Model):
     auto_backup = models.BooleanField(default=True)
     share_on_whatsapp = models.BooleanField(default=False)
 
+    task_reminder = models.BooleanField(default=False)
+    auto_sync_notification = models.BooleanField(default=True)
+
+
     def __str__(self):
         return f"{self.user.full_name} Profile"
     

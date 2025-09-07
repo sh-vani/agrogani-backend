@@ -13,7 +13,8 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'full_name', 'email', 'mobile', 'plan',
              'location', 'language', 'timezone',
             'push_notification', 'advisory_alert',
-            'auto_backup', 'share_on_whatsapp'
+            'auto_backup', 'share_on_whatsapp',
+             'task_reminder', 'auto_sync_notification'
         ]
 
 
@@ -29,7 +30,8 @@ class UserProfileUpdateSerializer(serializers.ModelSerializer):
             'full_name', 'email', 'mobile',
             'location', 'language', 'timezone',
             'push_notification', 'advisory_alert',
-            'auto_backup', 'share_on_whatsapp'
+            'auto_backup', 'share_on_whatsapp',
+             'task_reminder', 'auto_sync_notification'
         ]
 
     def update(self, instance, validated_data):
