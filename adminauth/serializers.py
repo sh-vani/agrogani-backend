@@ -23,3 +23,22 @@ class AdminSignupSerializer(serializers.ModelSerializer):
         admin.set_password(validated_data['password'])
         admin.save()
         return admin
+
+
+
+# adminauth/serializers.py
+class AdminLoginSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True)
+
+    def validate(self, data):
+        try:
+            user = AdminUser.objects.get(email=data['email'], is_active=True)
+        except AdminUser.DoesNotExist:
+            raise serializers.ValidationError("Invalid email or account inactive.")
+
+        if not user.check_password(data['password']):
+            raise serializers.ValidationError("Incorrect password.")
+
+        data['user'] = user
+        return data
