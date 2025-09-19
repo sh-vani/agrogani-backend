@@ -81,8 +81,10 @@ INSTALLED_APPS = [
       'info',
        'rest_framework',
        'adminpanel',
-       'adminauth'
+       'adminauth',
     #    'django_extensions',
+    'corsheaders',
+
 
 ]
 
@@ -94,7 +96,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    
+    'corsheaders.middleware.CorsMiddleware',
+
     # 'accounts.middleware.activity_middleware.UserActivityMiddleware',
 
 
@@ -266,6 +269,7 @@ RAZORPAY_KEY_SECRET = "TkpZXRLwI2vqBg8put1DBJCQ"
 from decouple import config
 WEATHER_API_KEY="be5a3a3aad7ded2bde2e15e8895c7cf7"
 
+CORS_ALLOW_ALL_ORIGINS = True  # For testing only
 
 
 # settings.py
