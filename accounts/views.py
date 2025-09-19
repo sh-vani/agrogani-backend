@@ -446,47 +446,173 @@ class RecentActivityAPI(APIView):
     
 
     # admin side api
+    
 
-    from rest_framework.views import APIView
+from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.db.models import Sum, Count
-from .models import RazorpayLog, User
+from django.utils import timezone
+from datetime import timedelta
+from .models import RazorpayLog, User, Plan
 from advisory.models import Advisory
 
 class DashboardSummaryAPIView(APIView):
-    # permission_classes = [IsAuthenticated]
-
     def get(self, request):
+        # 1. Basic Stats
         total_transactions = RazorpayLog.objects.filter(status='success').count()
         active_users = User.objects.filter(is_active=True).count()
         total_revenue = RazorpayLog.objects.filter(status='success').aggregate(Sum('amount'))['amount__sum'] or 0
         advisor_count = Advisory.objects.count()
 
+        # 2. User Activity Data (Last 6 Weeks)
+        user_activity = self.get_user_activity_data()
+
+        # 3. User Distribution by Plan
+        user_distribution = self.get_user_distribution()
+
         return Response({
             "total_transactions": total_transactions,
             "active_users": active_users,
             "total_revenue": total_revenue,
-            "advisor_count": advisor_count
+            "advisor_count": advisor_count,
+            "user_activity": user_activity,
+            "user_distribution": user_distribution
         })
-from django.utils.timezone import now, timedelta
-from django.db.models.functions import TruncWeek
 
-class UserActivityAPIView(APIView):
-    # permission_classes = [IsAuthenticated]
+    def get_user_activity_data(self):
+        """Get last 6 weeks data for Active Users and New Registrations"""
+        today = timezone.now().date()
+        six_weeks_ago = today - timedelta(weeks=6)
 
+        # Get weekly data
+        weeks = []
+        current = today
+        for i in range(6):
+            week_start = current - timedelta(days=current.weekday())  # Monday of the week
+            week_end = week_start + timedelta(days=6)  # Sunday
+            weeks.append({
+                'start': week_start,
+                'end': week_end,
+                'label': f"Week {i+1}"
+            })
+            current -= timedelta(weeks=1)
+
+        # Reverse to get from oldest to newest
+        weeks.reverse()
+
+        result = []
+
+        for week in weeks:
+            # Count new registrations in this week
+            new_registrations = User.objects.filter(
+                date_joined__gte=week['start'],
+                date_joined__lte=week['end']
+            ).count()
+
+            # Count active users (users who are active and have logged in during this week)
+            # For simplicity, we assume active users = all active users (you can refine this logic)
+            active_users_in_week = User.objects.filter(
+                is_active=True
+            ).count()  # You may want to filter based on login activity
+
+            result.append({
+                "week": week['label'],
+                "active_users": active_users_in_week,
+                "new_registrations": new_registrations
+            })
+
+        return result
+
+    def get_user_distribution(self):
+        """Get count of users per plan"""
+        distribution = User.objects.filter(plan__isnull=False).values('plan__name').annotate(count=Count('id'))
+        return [
+            {"plan": item['plan__name'], "count": item['count']}
+            for item in distribution
+        ]
+
+
+
+
+
+
+
+
+
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from django.shortcuts import get_object_or_404
+from .models import User
+from .serializers import FarmerSerializer
+
+class FarmersListView(APIView):
+    """
+    List all farmers or search by query
+    GET /api/farmers/?search=John
+    """
     def get(self, request):
-        six_weeks_ago = now() - timedelta(weeks=6)
-        users = User.objects.filter(date_joined__gte=six_weeks_ago)
+        search = request.GET.get('search', '').strip()
 
-        weekly_data = users.annotate(week=TruncWeek('date_joined')).values('week').annotate(
-            new_registrations=Count('id'),
-            active_users=Count('id')  # You can refine this based on actual activity logs
-        ).order_by('week')
+        farmers = User.objects.all().select_related('plan')
 
-        return Response(weekly_data)
-class UserDistributionAPIView(APIView):
-    # permission_classes = [IsAuthenticated]
+        if search:
+            farmers = farmers.filter(
+                models.Q(full_name__icontains=search) |
+                models.Q(email__icontains=search) |
+                models.Q(mobile__icontains=search) |
+                models.Q(id__icontains=search) |
+                models.Q(plan__name__icontains=search) |
+                models.Q(is_active__icontains=search.lower() in ['active', 'true'])
+            )
 
-    def get(self, request):
-        distribution = User.objects.values('plan__name').annotate(count=Count('id'))
-        return Response(distribution)
+        serializer = FarmerSerializer(farmers, many=True)
+        return Response(serializer.data)
+
+class FarmerDetailView(APIView):
+    """
+    Retrieve, Update or Delete a farmer
+    """
+    def get_object(self, pk):
+        return get_object_or_404(User, pk=pk)
+
+    def get(self, request, pk):
+        farmer = self.get_object(pk)
+        serializer = FarmerSerializer(farmer)
+        return Response(serializer.data)
+
+    def put(self, request, pk):
+        farmer = self.get_object(pk)
+        serializer = FarmerSerializer(farmer, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk):
+        farmer = self.get_object(pk)
+        farmer.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    

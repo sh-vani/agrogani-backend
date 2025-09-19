@@ -109,3 +109,50 @@ class ActivityLogSerializer(serializers.ModelSerializer):
         # You can use django.utils.timesince.timesince here for a "X time ago" format
         from django.utils.timesince import timesince
         return f"{timesince(obj.timestamp)} ago"
+
+
+
+
+
+#admin dhasboard ka liya framer management
+
+from rest_framework import serializers
+from .models import User, Plan
+
+class PlanSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Plan
+        fields = ['name']  # Only name needed for farmer list
+
+class FarmerSerializer(serializers.ModelSerializer):
+    plan_name = serializers.CharField(source='plan.name', read_only=True)
+    location = serializers.SerializerMethodField()  # You can add a location field if available
+
+    class Meta:
+        model = User
+        fields = [
+            'id',
+            'full_name',
+            'location',
+            'plan_name',
+            'email',
+            'mobile',
+            'is_active',
+            'date_joined',
+            'plan_end_date'  # We'll calculate this
+        ]
+
+    def get_location(self, obj):
+        # If you have location field, return it. Else return placeholder.
+        # You can add a `location` field to User model later.
+        return "Unknown"  # or obj.location if you add it
+
+    def get_plan_end_date(self, obj):
+        # If you have UserPlan model, calculate from there
+        # For now, just return None or a dummy date
+        from django.utils import timezone
+        if obj.date_joined:
+            return obj.date_joined + timezone.timedelta(days=365)
+        return None
+
+    plan_end_date = serializers.SerializerMethodField()

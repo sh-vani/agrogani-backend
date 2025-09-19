@@ -271,8 +271,3 @@ WEATHER_API_KEY="be5a3a3aad7ded2bde2e15e8895c7cf7"
 # settings.py
 
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    
-]
-

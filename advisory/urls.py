@@ -5,7 +5,7 @@ from .views import (
     AdvisoryRetrieveAPIView,
     AdvisoryUpdateAPIView,
     AdvisoryDeleteAPIView,
-        AddFertilizerShopView,
+    AddFertilizerShopView,
     ListFertilizerShopsView,
     UpdateFertilizerShopView,
     DeleteFertilizerShopView,
@@ -23,8 +23,6 @@ urlpatterns = [
     path('shops/list/', ListFertilizerShopsView.as_view(), name='list-shops'),
     path('shops/<int:shop_id>/update/', UpdateFertilizerShopView.as_view(), name='update-shop'),
     path('shops/<int:shop_id>/delete/', DeleteFertilizerShopView.as_view(), name='delete-shop'),
-
-
     path('advisory-count/', AdvisoryShopCountView.as_view(), name='advisory-shop-count'),
 
 

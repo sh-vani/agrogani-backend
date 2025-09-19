@@ -12,6 +12,9 @@ from datetime import timedelta
 from .serializers import PlanSerializer,UserPlanSerializer
 # Razorpay client init
 razorpay_client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
+from rest_framework import status
+from django.shortcuts import get_object_or_404
+
 
 class PlanListView(APIView):
     permission_classes = [IsAuthenticated]
@@ -19,7 +22,56 @@ class PlanListView(APIView):
     def get(self, request):
         plans = Plan.objects.filter(is_active=True)
         serializer = PlanSerializer(plans, many=True)
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        serializer = PlanSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class PlanDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self, pk):
+        return get_object_or_404(Plan, pk=pk)
+
+    def get(self, request, pk):
+        plan = self.get_object(pk)
+        serializer = PlanSerializer(plan)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def put(self, request, pk):
+        plan = self.get_object(pk)
+        serializer = PlanSerializer(plan, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk):
+        plan = self.get_object(pk)
+        plan.is_active = False  # Soft delete
+        plan.save()
+        return Response(
+            {"message": "Plan deactivated successfully."}, 
+            status=status.HTTP_200_OK
+
+
+        )
+
+
+
+
+
+
+
+
+
+
+
 
 class CreateOrderView(APIView):
     permission_classes = [IsAuthenticated]

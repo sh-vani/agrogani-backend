@@ -12,6 +12,12 @@ class Plan(models.Model):
     features = models.TextField()
     device_limit = models.PositiveIntegerField(default=1)  # Default 1 device allowed
     is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)  # ✅ Fixed
+    updated_at = models.DateTimeField(auto_now=True)
+
+
+    
+
 
     def __str__(self):
         return self.name
