@@ -448,15 +448,27 @@ class RecentActivityAPI(APIView):
     # admin side api
     
 
+
+
+
+
+
+
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated  # 🔑 Permission
+from rest_framework_simplejwt.authentication import JWTAuthentication  # 🔑 JWT Auth
 from django.db.models import Sum, Count
 from django.utils import timezone
 from datetime import timedelta
 from .models import RazorpayLog, User, Plan
 from advisory.models import Advisory
 
+
 class DashboardSummaryAPIView(APIView):
+    authentication_classes = [JWTAuthentication]   # ✅ JWT token required
+    permission_classes = [IsAuthenticated]         # ✅ Only logged-in users allowed
+
     def get(self, request):
         # 1. Basic Stats
         total_transactions = RazorpayLog.objects.filter(status='success').count()
@@ -480,40 +492,30 @@ class DashboardSummaryAPIView(APIView):
         })
 
     def get_user_activity_data(self):
-        """Get last 6 weeks data for Active Users and New Registrations"""
         today = timezone.now().date()
-        six_weeks_ago = today - timedelta(weeks=6)
-
-        # Get weekly data
-        weeks = []
         current = today
+        weeks = []
+
         for i in range(6):
-            week_start = current - timedelta(days=current.weekday())  # Monday of the week
-            week_end = week_start + timedelta(days=6)  # Sunday
+            week_start = current - timedelta(days=current.weekday())
+            week_end = week_start + timedelta(days=6)
             weeks.append({
-                'start': week_start,
-                'end': week_end,
-                'label': f"Week {i+1}"
+                "start": week_start,
+                "end": week_end,
+                "label": f"Week {i+1}"
             })
             current -= timedelta(weeks=1)
 
-        # Reverse to get from oldest to newest
         weeks.reverse()
 
         result = []
-
         for week in weeks:
-            # Count new registrations in this week
             new_registrations = User.objects.filter(
                 date_joined__gte=week['start'],
                 date_joined__lte=week['end']
             ).count()
 
-            # Count active users (users who are active and have logged in during this week)
-            # For simplicity, we assume active users = all active users (you can refine this logic)
-            active_users_in_week = User.objects.filter(
-                is_active=True
-            ).count()  # You may want to filter based on login activity
+            active_users_in_week = User.objects.filter(is_active=True).count()
 
             result.append({
                 "week": week['label'],
@@ -524,14 +526,11 @@ class DashboardSummaryAPIView(APIView):
         return result
 
     def get_user_distribution(self):
-        """Get count of users per plan"""
         distribution = User.objects.filter(plan__isnull=False).values('plan__name').annotate(count=Count('id'))
         return [
             {"plan": item['plan__name'], "count": item['count']}
             for item in distribution
         ]
-
-
 
 
 

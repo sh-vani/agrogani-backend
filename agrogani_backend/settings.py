@@ -54,10 +54,24 @@ DEBUG = True
 
 
 # ALLOWED_HOSTS = ['34e5-2402-8100-2711-7fd3-4150-960d-bd7a-d49a.ngrok-free.app']
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '.ngrok-free.app','*']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '.ngrok-free.app','*',]
 
 
 # Application definition
+CORS_ALLOW_HEADERS = [
+    "content-type",
+    "authorization",
+]
+# settings.py
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",  # React dev server
+    "https://supportive-success-production.up.railway.app",  # Railway frontend (agar ho)
+]
+
+# Agar sabhi origins allow karna chahte ho (testing ke liye only!)
+# CORS_ALLOW_ALL_ORIGINS = True
+
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -89,6 +103,8 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -96,7 +112,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
+    
 
     # 'accounts.middleware.activity_middleware.UserActivityMiddleware',
 
@@ -240,7 +256,7 @@ SIMPLE_JWT = {
 import os
 
 
-ALLOWED_HOSTS = ['*']
+
 SECRET_KEY = os.environ.get('SECRET_KEY', 'fallback-secret')
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
@@ -269,7 +285,7 @@ RAZORPAY_KEY_SECRET = "TkpZXRLwI2vqBg8put1DBJCQ"
 from decouple import config
 WEATHER_API_KEY="be5a3a3aad7ded2bde2e15e8895c7cf7"
 
-CORS_ALLOW_ALL_ORIGINS = True  # For testing only
+
 
 
 # settings.py

@@ -24,15 +24,28 @@ class AdminSignupView(APIView):
 
 
 # adminauth/views.py
+
+
+
+from rest_framework_simplejwt.tokens import RefreshToken
 from .serializers import AdminLoginSerializer
+
+def get_tokens_for_user(user):
+    refresh = RefreshToken.for_user(user)
+    return {
+        'refresh': str(refresh),
+        'access': str(refresh.access_token),
+    }
 
 class AdminLoginView(APIView):
     def post(self, request):
         serializer = AdminLoginSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.validated_data['user']
+            tokens = get_tokens_for_user(user)
             return Response({
                 'message': 'Login successful',
+                'tokens': tokens,
                 'admin': {
                     'id': user.id,
                     'email': user.email,
