@@ -64,13 +64,13 @@ CORS_ALLOW_HEADERS = [
 ]
 # settings.py
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",  # React dev server
-    "https://supportive-success-production.up.railway.app",  # Railway frontend (agar ho)
-]
+# CORS_ALLOWED_ORIGINS = [
+#     "http://localhost:5173",  # React dev server
+#     # "https://supportive-success-production.up.railway.app",  # Railway frontend (agar ho)
+# ]
 
-# Agar sabhi origins allow karna chahte ho (testing ke liye only!)
-# CORS_ALLOW_ALL_ORIGINS = True
+# # Agar sabhi origins allow karna chahte ho (testing ke liye only!)
+# # CORS_ALLOW_ALL_ORIGINS = True
 
 
 INSTALLED_APPS = [
@@ -286,7 +286,17 @@ from decouple import config
 WEATHER_API_KEY="be5a3a3aad7ded2bde2e15e8895c7cf7"
 
 
+# settings.py के नीचे जोड़ें (DEBUG=True के बाद)
 
+if DEBUG:
+    CORS_ALLOW_ALL_ORIGINS = True  # सभी origins को allow करें (development के लिए)
+    CORS_ALLOW_CREDENTIALS = True   # JWT/cookies के लिए जरूरी
+else:
+    CORS_ALLOWED_ORIGINS = [
+        "http://localhost:5173",
+        "https://supportive-success-production.up.railway.app",
+    ]
+    CORS_ALLOW_CREDENTIALS = True
 
 # settings.py
 
