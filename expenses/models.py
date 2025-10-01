@@ -31,6 +31,7 @@ class Expense(models.Model):
     expense_type = models.CharField(max_length=20, choices=EXPENSE_TYPES)
     date = models.DateField()
     paying_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    paid_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     payment_method = models.CharField(choices=PAYMENT_CHOICES, max_length=10)
     payment_type = models.CharField(choices=PAYMENT_TYPE, max_length=10)
     note = models.TextField(blank=True, null=True)
