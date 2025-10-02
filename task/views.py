@@ -26,14 +26,6 @@ class AddTaskView(APIView):
             return Response({"error": str(e)}, status=500)
 
 
-class TaskListView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        user_tasks = Task.objects.filter(user=request.user).order_by('start_datetime')
-        serializer = TaskSerializer(user_tasks, many=True)
-        return Response(serializer.data)
-
 
 
 from datetime import timedelta
@@ -71,33 +63,6 @@ class MarkTaskCompleteView(APIView):
 
         return Response({"success": True, "message": "Task marked complete."})
 
-
-from datetime import datetime, timedelta
-
-class TaskListView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        filter_type = request.GET.get('filter', 'all')
-
-        today = datetime.now().date()
-        week_start = today - timedelta(days=today.weekday())
-        week_end = week_start + timedelta(days=6)
-
-        tasks = Task.objects.filter(user=request.user)
-
-        if filter_type == 'today':
-            tasks = tasks.filter(start_datetime__date=today)
-        elif filter_type == 'week':
-            tasks = tasks.filter(start_datetime__date__range=(week_start, week_end))
-        elif filter_type == 'month':
-            tasks = tasks.filter(start_datetime__month=today.month)
-        elif filter_type == 'completed':
-            tasks = tasks.filter(is_completed=True)
-
-        tasks = tasks.order_by('start_datetime')
-        serializer = TaskSerializer(tasks, many=True)
-        return Response(serializer.data)
 
 
 class TaskCalendarView(APIView):
@@ -144,7 +109,56 @@ class TaskSummaryView(APIView):
             "priority_breakdown": priority_count
         })
 
+from datetime import datetime, timedelta, date
+from django.utils.dateparse import parse_date
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from .models import Task
+from .serializers import TaskSerializer
 
+class TaskListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        tasks = Task.objects.filter(user=request.user)
+
+        # Check for 'date' parameter (e.g., ?date=2025-07-05)
+        date_param = request.query_params.get('date')
+        if date_param:
+            parsed_date = parse_date(date_param)
+            if parsed_date is None:
+                return Response(
+                    {"error": "Invalid date format. Use YYYY-MM-DD."},
+                    status=400
+                )
+            # Filter by exact date (timezone-safe using __date)
+            tasks = tasks.filter(start_datetime__date=parsed_date)
+
+        # Check for 'filter' parameter (e.g., ?filter=today)
+        elif 'filter' in request.query_params:
+            filter_type = request.query_params.get('filter')
+            today = date.today()
+            
+            if filter_type == 'today':
+                tasks = tasks.filter(start_datetime__date=today)
+            elif filter_type == 'week':
+                week_start = today - timedelta(days=today.weekday())
+                week_end = week_start + timedelta(days=6)
+                tasks = tasks.filter(start_datetime__date__range=(week_start, week_end))
+            elif filter_type == 'month':
+                tasks = tasks.filter(
+                    start_datetime__year=today.year,
+                    start_datetime__month=today.month
+                )
+            elif filter_type == 'completed':
+                tasks = tasks.filter(is_completed=True)
+
+        # Default: if no 'date' and no 'filter', return all tasks
+
+        tasks = tasks.order_by('start_datetime')
+        serializer = TaskSerializer(tasks, many=True)
+        return Response(serializer.data)
 
 from rest_framework import status
 
