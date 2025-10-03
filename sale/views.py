@@ -337,6 +337,29 @@ class BuyerLedgerTodayAPIView(APIView):
         return Response(response_data)
 
 
+
+
+
+
+
+# views.py
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import permissions
+from .models import Buyer  # adjust import as per your app
+
+class BuyerListView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsPaidMember]  # assuming IsPaidMember exists
+
+    def get(self, request):
+        # Get all buyers belonging to the current user
+        buyers = Buyer.objects.filter(user=request.user).values('id', 'name')
+        
+        # Convert to list of dicts (already done by .values())
+        return Response(list(buyers))
+    
+    
+
 from datetime import date, timedelta
 from calendar import monthrange
 from rest_framework.views import APIView
@@ -557,6 +580,63 @@ class BuyerLedgerLatestAPIView(APIView):
         return Response(dict(ledger))
  
 
+# from rest_framework.views import APIView
+# from rest_framework.response import Response
+# from rest_framework import permissions
+# from django.db.models import Q
+# from django.utils.dateformat import format as date_format
+# from .models import DetailedSale
+# from shop.models import Buyer
+# from .permissions import IsPaidMember
+
+# class BuyerLedgerSummaryAPIView(APIView):
+#     permission_classes = [permissions.IsAuthenticated, IsPaidMember]
+
+#     def get(self, request):
+#         user = request.user
+#         buyer_id = request.query_params.get("buyer_id")
+#         buyer_name = request.query_params.get("buyer_name")
+
+#         sales = DetailedSale.objects.none()
+
+#         if buyer_id:
+#             try:
+#                 buyer = Buyer.objects.get(id=buyer_id, user=user)
+#             except Buyer.DoesNotExist:
+#                 return Response({"message": "Buyer not found"}, status=404)
+
+#             sales = DetailedSale.objects.filter(
+#                 Q(user=user) & (Q(buyer=buyer) | Q(buyer_details__buyer_name__iexact=buyer.name))
+#             )
+
+#         elif buyer_name:
+#             buyer_obj = Buyer.objects.filter(user=user, name__iexact=buyer_name).first()
+#             if buyer_obj:
+#                 sales = DetailedSale.objects.filter(
+#                     Q(user=user) & (Q(buyer=buyer_obj) | Q(buyer_details__buyer_name__iexact=buyer_obj.name))
+#                 )
+#             else:
+#                 sales = DetailedSale.objects.filter(user=user, buyer_details__buyer_name__iexact=buyer_name)
+
+#         else:
+#             sales = DetailedSale.objects.filter(user=user)
+
+#         if not sales.exists():
+#             return Response({"message": "No sales found"}, status=404)
+
+#         total_sale_value = sum(float(s.total_sale_amount or 0) for s in sales)
+#         total_received = sum(float(s.payment_details.get("paid_amount", 0) or 0) for s in sales)
+#         last_sale_date = max((s.sale_date for s in sales), default=None)
+#         remaining_due = total_sale_value - total_received
+
+#         return Response({
+#             "total_sale_value": round(total_sale_value, 2),
+#             "total_received": round(total_received, 2),
+#             "remaining_due": round(remaining_due, 2),
+#             "last_sale_date": date_format(last_sale_date, "d M Y") if last_sale_date else None
+#         })
+
+
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import permissions
@@ -572,35 +652,46 @@ class BuyerLedgerSummaryAPIView(APIView):
     def get(self, request):
         user = request.user
         buyer_id = request.query_params.get("buyer_id")
-        buyer_name = request.query_params.get("buyer_name")
+        buyer_name = request.query_params.get("buyer_name", "").strip()
 
-        sales = DetailedSale.objects.none()
-
+        # Step 1: Decide whether to filter by buyer or show all
         if buyer_id:
             try:
                 buyer = Buyer.objects.get(id=buyer_id, user=user)
+                sales = DetailedSale.objects.filter(
+                    Q(user=user) & (Q(buyer=buyer) | Q(buyer_details__buyer_name__iexact=buyer.name))
+                )
             except Buyer.DoesNotExist:
                 return Response({"message": "Buyer not found"}, status=404)
-
-            sales = DetailedSale.objects.filter(
-                Q(user=user) & (Q(buyer=buyer) | Q(buyer_details__buyer_name__iexact=buyer.name))
-            )
 
         elif buyer_name:
             buyer_obj = Buyer.objects.filter(user=user, name__iexact=buyer_name).first()
             if buyer_obj:
                 sales = DetailedSale.objects.filter(
-                    Q(user=user) & (Q(buyer=buyer_obj) | Q(buyer_details__buyer_name__iexact=buyer_obj.name))
+                    Q(user=user) & (
+                        Q(buyer=buyer_obj) | 
+                        Q(buyer_details__buyer_name__iexact=buyer_obj.name)
+                    )
                 )
             else:
-                sales = DetailedSale.objects.filter(user=user, buyer_details__buyer_name__iexact=buyer_name)
-
+                sales = DetailedSale.objects.filter(
+                    user=user,
+                    buyer_details__buyer_name__iexact=buyer_name
+                )
         else:
+            # 🟢 DEFAULT: No buyer filter → show summary of ALL sales
             sales = DetailedSale.objects.filter(user=user)
 
+        # Step 2: If no sales at all
         if not sales.exists():
-            return Response({"message": "No sales found"}, status=404)
+            return Response({
+                "total_sale_value": 0,
+                "total_received": 0,
+                "remaining_due": 0,
+                "last_sale_date": None
+            })
 
+        # Step 3: Calculate summary
         total_sale_value = sum(float(s.total_sale_amount or 0) for s in sales)
         total_received = sum(float(s.payment_details.get("paid_amount", 0) or 0) for s in sales)
         last_sale_date = max((s.sale_date for s in sales), default=None)
@@ -612,6 +703,12 @@ class BuyerLedgerSummaryAPIView(APIView):
             "remaining_due": round(remaining_due, 2),
             "last_sale_date": date_format(last_sale_date, "d M Y") if last_sale_date else None
         })
+
+
+
+
+
+
 
 
 

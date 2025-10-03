@@ -14,6 +14,7 @@ BuyerLedgerTodayAPIView,
 CommodityTransactionSummaryAPIView,
     BuyerLedgerMonthlyAPIView,
     BuyerLedgerSummaryAPIView,
+    BuyerListView,
        BuyerLedgerDailyAPIView
 )
 
@@ -36,6 +37,7 @@ path('buyer-ledger-latest/', BuyerLedgerLatestAPIView.as_view(), name='buyer-led
       
 
 
+   path('buyers-list/', BuyerListView.as_view(), name='buyer-list'),
     path('buyer-ledger-daily/', BuyerLedgerDailyAPIView.as_view(), name='buyer-ledger-daily'),
      path('buyer-ledger/', BuyerLedgerTodayAPIView.as_view(), name='buyer-ledger'),
         path('ledger/summary/', BuyerLedgerSummaryAPIView.as_view(), name='buyer-ledger-summary'),
