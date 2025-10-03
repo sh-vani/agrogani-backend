@@ -337,17 +337,25 @@ class BuyerLedgerTodayAPIView(APIView):
         return Response(response_data)
 
 
+from datetime import date, timedelta
+from calendar import monthrange
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import permissions
+from .models import DetailedSale
+from .permissions import IsPaidMember  # Ensure this exists
+
 
 class CommodityTransactionSummaryAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsPaidMember]
 
     def get(self, request):
         user = request.user
-        crop_type = request.query_params.get("crop_type")  # Optional
-        period = request.query_params.get("period", "").lower()  # Optional
+        crop_type = request.query_params.get("crop_type")  # Optional: e.g., "Wheat"
+        period = request.query_params.get("period", "").lower()  # Optional: today/week/month/all_time
         today = date.today()
 
-        # Determine date range based on period
+        # Step 1: Set date range based on period
         start_date = end_date = None
         if period == "today":
             start_date = end_date = today
@@ -356,21 +364,22 @@ class CommodityTransactionSummaryAPIView(APIView):
             end_date = today
         elif period == "month":
             start_date = today.replace(day=1)
-            end_date = today
+            last_day = monthrange(today.year, today.month)[1]
+            end_date = today.replace(day=last_day)
         elif period == "all_time" or not period:
-            start_date = end_date = None
+            start_date = end_date = None  # No date filter
         else:
-            return Response({"error": "Invalid period"}, status=400)
+            return Response({"error": "Invalid period. Use: today, week, month, all_time"}, status=400)
 
-        # Base query
+        # Step 2: Base query — only user's sales
         sales = DetailedSale.objects.filter(user=user).order_by("-sale_date", "-created_at")
 
-        # Apply time filter if applicable
-        if start_date and end_date:
+        # Step 3: Apply DATE filter on `sale_date` (which is DateField)
+        if start_date is not None and end_date is not None:
             sales = sales.filter(sale_date__range=[start_date, end_date])
 
+        # Step 4: Fallback if no sales in period
         fallback_used = False
-
         if not sales.exists():
             latest_sale = DetailedSale.objects.filter(user=user).order_by("-sale_date", "-created_at").first()
             if latest_sale:
@@ -379,30 +388,38 @@ class CommodityTransactionSummaryAPIView(APIView):
             else:
                 return Response({"message": "No transactions found"}, status=204)
 
+        # Step 5: Build response transactions
         transactions = []
-
         for sale in sales:
+            # Format time from `created_at` (for display only)
             time_str = sale.created_at.strftime("%I:%M %p") if sale.created_at else "Unknown Time"
-            date_str = (
-                "Today" if sale.sale_date == today else
-                "Yesterday" if sale.sale_date == today - timedelta(days=1) else
-                sale.sale_date.strftime("%d %b")
-            )
+            
+            # Format date label
+            if sale.sale_date == today:
+                date_str = "Today"
+            elif sale.sale_date == today - timedelta(days=1):
+                date_str = "Yesterday"
+            else:
+                date_str = sale.sale_date.strftime("%d %b")
 
-            payment_amount = sale.payment_details.get("paid_amount", 0)
-            total_amount = sale.total_sale_amount
-            if payment_amount == total_amount:
+            # Determine payment status
+            paid_amount = sale.payment_details.get("paid_amount", 0)
+            total = sale.total_sale_amount
+            if paid_amount == total:
                 payment_status = "Paid"
-            elif payment_amount == 0:
+            elif paid_amount == 0:
                 payment_status = "Due"
             else:
                 payment_status = "Partial"
 
+            # Loop through crops and apply crop filter
             for crop in sale.crops:
-                if crop_type and crop.get("crop_name", "").lower() != crop_type.lower():
-                    continue
+                crop_name = crop.get("crop_name", "")
+                if crop_type and crop_name.lower() != crop_type.lower():
+                    continue  # Skip if crop doesn't match
+
                 transactions.append({
-                    "crop_name": crop.get("crop_name", ""),
+                    "crop_name": crop_name,
                     "bags": f"{crop.get('bags', 0)} bags × {crop.get('weight_per_bag', 0)}kg",
                     "rate": f"₹{crop.get('rate_per_kg', 0)}/kg",
                     "date_time": f"{date_str}, {time_str}",
@@ -416,8 +433,6 @@ class CommodityTransactionSummaryAPIView(APIView):
             "crop_type": crop_type or "all_crops",
             "transactions": transactions
         })
-
-
 
 
 from rest_framework.views import APIView
