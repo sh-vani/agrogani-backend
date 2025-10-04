@@ -30,26 +30,26 @@ DEBUG = True
 
 
 
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'console':{
-            'class': 'logging.StreamHandler',
-        },
-        'file': {
-            'level': 'DEBUG',
-            'class': 'logging.FileHandler',
-            'filename': 'django_debug.log',
-        },
-    },
-    'loggers': {
-        'django': {
-            'handlers': ['console', 'file'],
-            'level': 'DEBUG',
-        },
-    },
-}
+# LOGGING = {
+#     'version': 1,
+#     'disable_existing_loggers': False,
+#     'handlers': {
+#         'console':{
+#             'class': 'logging.StreamHandler',
+#         },
+#         'file': {
+#             'level': 'DEBUG',
+#             'class': 'logging.FileHandler',
+#             'filename': 'django_debug.log',
+#         },
+#     },
+#     'loggers': {
+#         'django': {
+#             'handlers': ['console', 'file'],
+#             'level': 'DEBUG',
+#         },
+#     },
+# }
 
 
 
@@ -93,7 +93,7 @@ INSTALLED_APPS = [
       'reports',
       'advisory',
       'info',
-       'rest_framework',
+      'rest_framework',
        'adminpanel',
        'adminauth',
     #    'django_extensions',
@@ -295,6 +295,7 @@ else:
     CORS_ALLOWED_ORIGINS = [
         "http://localhost:5173",
         "https://supportive-success-production.up.railway.app",
+       
     ]
     CORS_ALLOW_CREDENTIALS = True
 

@@ -1,4 +1,5 @@
 # adminauth/serializers.py
+
 from rest_framework import serializers
 from .models import AdminUser
 
@@ -19,14 +20,13 @@ class AdminSignupSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data.pop('confirm_password')
+        password = validated_data.pop('password')
         admin = AdminUser(**validated_data)
-        admin.set_password(validated_data['password'])
+        admin.set_password(password)
         admin.save()
         return admin
 
 
-
-# adminauth/serializers.py
 class AdminLoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
