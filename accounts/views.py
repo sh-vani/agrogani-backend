@@ -454,8 +454,7 @@ class RecentActivityAPI(APIView):
 
 
 
-from rest_framework.views import APIView
-from rest_framework.response import Response
+
 from rest_framework.permissions import IsAuthenticated  # 🔑 Permission
 from rest_framework_simplejwt.authentication import JWTAuthentication  # 🔑 JWT Auth
 from django.db.models import Sum, Count
@@ -465,12 +464,36 @@ from .models import RazorpayLog, User, Plan
 from advisory.models import Advisory
 
 
+# adminauth/views.py
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from django.db.models import Sum, Count
+from django.utils import timezone
+from datetime import timedelta
+from adminauth.auth import AdminJWTAuthentication
+from  adminauth.models import AdminUser  # ✅ Use your custom model
+# If you have other models like RazorpayLog, User, Plan, Advisory — import them here
+# from .models import RazorpayLog, User, Plan
+# from advisory.models import Advisory
+
+# ⚠️ Note: Agar aapke dashboard mein `RazorpayLog`, `User`, `Plan`, `Advisory` use ho rahe hain — to unko import karein.
+# Lekin agar aap sirf `AdminUser` ka dashboard banana chahte hain — to niche diya gaya code use karein.
+# adminauth/views.py
+
+
+
+from django.db.models import Sum, Count
+from django.utils import timezone
+from datetime import timedelta
+
 class DashboardSummaryAPIView(APIView):
-    authentication_classes = [JWTAuthentication]   # ✅ JWT token required
-    permission_classes = [IsAuthenticated]         # ✅ Only logged-in users allowed
+    authentication_classes = [AdminJWTAuthentication]   # ✅ Custom JWT
+    permission_classes = [IsAuthenticated]              # ✅ Only logged-in admins
 
     def get(self, request):
-        # 1. Basic Stats
+        # 1. Basic Stats (exactly as you had)
         total_transactions = RazorpayLog.objects.filter(status='success').count()
         active_users = User.objects.filter(is_active=True).count()
         total_revenue = RazorpayLog.objects.filter(status='success').aggregate(Sum('amount'))['amount__sum'] or 0
@@ -531,10 +554,6 @@ class DashboardSummaryAPIView(APIView):
             {"plan": item['plan__name'], "count": item['count']}
             for item in distribution
         ]
-
-
-
-
 
 
 

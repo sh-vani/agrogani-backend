@@ -22,3 +22,14 @@ class AdminUser(models.Model):
 
     def __str__(self):
         return self.email
+
+
+    # ✅ Add this property — required by Django auth system
+    @property
+    def is_authenticated(self):
+        return True  # Custom user is always authenticated if exists
+
+    # Optional: Add these for compatibility
+    @property
+    def is_anonymous(self):
+        return False
