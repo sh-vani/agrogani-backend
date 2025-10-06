@@ -1,51 +1,35 @@
+
+
+
+# advisory/urls.py
 from django.urls import path
 from .views import (
-    AdvisoryListAPIView,
-    AdvisoryCreateAPIView,
-    AdvisoryRetrieveAPIView,
-    AdvisoryUpdateAPIView,
-    AdvisoryDeleteAPIView,
-    AddFertilizerShopView,
-    ListFertilizerShopsView,
-    UpdateFertilizerShopView,
-    DeleteFertilizerShopView,
+    # User APIs (logged-in users can view only)
+    UserAdvisoryListView,
+    UserFertilizerShopListView,
+    
+    # Admin APIs (JWT required for CRUD)
+    AdminAdvisoryListCreateView,
+    AdminAdvisoryDetailView,
+    AdminFertilizerShopListCreateView,
+    AdminFertilizerShopDetailView,
+    
+    # Dashboard
     AdvisoryShopCountView
 )
 
 urlpatterns = [
-    path('advisories/list/', AdvisoryListAPIView.as_view(), name='advisory-list'),
-    path('advisories/create/', AdvisoryCreateAPIView.as_view(), name='advisory-create'),
-    path('advisories/<int:pk>/', AdvisoryRetrieveAPIView.as_view(), name='advisory-detail'),
-    path('advisories/<int:pk>/update/', AdvisoryUpdateAPIView.as_view(), name='advisory-update'),
-    path('advisories/<int:pk>/delete/', AdvisoryDeleteAPIView.as_view(), name='advisory-delete'),
-
-     path('shops/add/', AddFertilizerShopView.as_view(), name='add-shop'),
-    path('shops/list/', ListFertilizerShopsView.as_view(), name='list-shops'),
-    path('shops/<int:shop_id>/update/', UpdateFertilizerShopView.as_view(), name='update-shop'),
-    path('shops/<int:shop_id>/delete/', DeleteFertilizerShopView.as_view(), name='delete-shop'),
+    # User APIs - Must be logged in (any user can view)
+    path('advisories/list/', UserAdvisoryListView.as_view(), name='user-advisory-list'),
+    path('shops/list/', UserFertilizerShopListView.as_view(), name='user-shop-list'),
+    
+    # Admin APIs - Authentication required
+    path('admin/advisories/', AdminAdvisoryListCreateView.as_view(), name='admin-advisory-list-create'),
+    path('admin/advisories/<int:pk>/', AdminAdvisoryDetailView.as_view(), name='admin-advisory-detail'),
+    path('admin/shops/', AdminFertilizerShopListCreateView.as_view(), name='admin-shop-list-create'),
+    path('admin/shops/<int:pk>/', AdminFertilizerShopDetailView.as_view(), name='admin-shop-detail'),
+    
+    # Dashboard count
     path('advisory-count/', AdvisoryShopCountView.as_view(), name='advisory-shop-count'),
-
-
 ]
-
-
-
-
-# from django.urls import path
-# from .views import (
-#     RegionCreateAPIView,
-#     AdvisoryCreateAPIView,
-#     ServiceProviderCreateAPIView,
-#     AdvisoryDashboardAPIView
-# )
-
-# urlpatterns = [
-#     path('region/', RegionCreateAPIView.as_view(), name='create-region'),
-#     path('advisory/', AdvisoryCreateAPIView.as_view(), name='create-advisory'),
-#     path('service-provider/', ServiceProviderCreateAPIView.as_view(), name='create-service-provider'),
-#     path('dashboard/', AdvisoryDashboardAPIView.as_view(), name='advisory-dashboard'),
-# ]
-
-
-
 

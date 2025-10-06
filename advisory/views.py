@@ -1,174 +1,71 @@
-from rest_framework import generics, permissions
-from .models import Advisory,FertilizerShop  # Updated model import
-from .serializers import AdvisorySerializer,FertilizerShopSerializer  # Updated serializer import
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from django.shortcuts import get_object_or_404
-
-
-
-# your other imports...
-
-
-# List all advisories
-class AdvisoryListAPIView(generics.ListAPIView):
-    queryset = Advisory.objects.all()
-    serializer_class = AdvisorySerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-# Create new advisory
-class AdvisoryCreateAPIView(generics.CreateAPIView):
-    queryset = Advisory.objects.all()
-    serializer_class = AdvisorySerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-# Retrieve single advisory
-class AdvisoryRetrieveAPIView(generics.RetrieveAPIView):
-    queryset = Advisory.objects.all()
-    serializer_class = AdvisorySerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-# Update single advisory
-class AdvisoryUpdateAPIView(generics.UpdateAPIView):
-    queryset = Advisory.objects.all()
-    serializer_class = AdvisorySerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-# Delete single advisory
-class AdvisoryDeleteAPIView(generics.DestroyAPIView):
-    queryset = Advisory.objects.all()  
-    serializer_class = AdvisorySerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-
-
-# add
-class AddFertilizerShopView(APIView):
-    def post(self, request):
-        serializer = FertilizerShopSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response({"success": True, "message": "Shop added."}, status=201)
-        return Response(serializer.errors, status=400)
-
-
-
-# 
-class ListFertilizerShopsView(APIView):
-    def get(self, request):
-        shops = FertilizerShop.objects.all().order_by('name')
-        serializer = FertilizerShopSerializer(shops, many=True)
-        return Response(serializer.data)
-
-
-# 
-
-class UpdateFertilizerShopView(APIView):
-    def put(self, request, shop_id):
-        shop = get_object_or_404(FertilizerShop, id=shop_id)
-        serializer = FertilizerShopSerializer(shop, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response({"success": True, "message": "Shop updated."})
-        return Response(serializer.errors, status=400)
-
-
-
-
-# 
-class DeleteFertilizerShopView(APIView):
-    def delete(self, request, shop_id):
-        shop = get_object_or_404(FertilizerShop, id=shop_id)
-        shop.delete()
-        return Response({"success": True, "message": "Shop deleted."})
-
-
-
-
-
-
 # advisory/views.py
+from rest_framework import generics, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from django.shortcuts import get_object_or_404
 from django.utils.timezone import now
-from advisory.models import Advisory, FertilizerShop
+from .models import Advisory, FertilizerShop
+from .serializers import AdvisorySerializer, FertilizerShopSerializer
+from adminauth.auth import AdminJWTAuthentication
 
+# === USER APIS (Logged-in users can view only) ===
+class UserAdvisoryListView(generics.ListAPIView):
+    queryset = Advisory.objects.all()
+    serializer_class = AdvisorySerializer
+    authentication_classes = [AdminJWTAuthentication]  # ✅ User must be logged in
+    permission_classes = [IsAuthenticated]  # ✅ Must be authenticated
+
+class UserFertilizerShopListView(generics.ListAPIView):
+    queryset = FertilizerShop.objects.all().order_by('name')
+    serializer_class = FertilizerShopSerializer
+    authentication_classes = [AdminJWTAuthentication]  # ✅ User must be logged in
+    permission_classes = [IsAuthenticated]  # ✅ Must be authenticated
+
+# === ADMIN APIS (JWT required for CRUD) ===
+class AdminAdvisoryListCreateView(generics.ListCreateAPIView):
+    queryset = Advisory.objects.all()
+    serializer_class = AdvisorySerializer
+    authentication_classes = [AdminJWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+class AdminAdvisoryDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Advisory.objects.all()
+    serializer_class = AdvisorySerializer
+    authentication_classes = [AdminJWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+class AdminFertilizerShopListCreateView(generics.ListCreateAPIView):
+    queryset = FertilizerShop.objects.all().order_by('name')
+    serializer_class = FertilizerShopSerializer
+    authentication_classes = [AdminJWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+class AdminFertilizerShopDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = FertilizerShop.objects.all()
+    serializer_class = FertilizerShopSerializer
+    authentication_classes = [AdminJWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+# === DASHBOARD COUNT VIEW ===
 class AdvisoryShopCountView(APIView):
+    authentication_classes = [AdminJWTAuthentication]
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         today = now().date()
-
-        advisor_total = Advisory.objects.count()
-        advisor_today = Advisory.objects.filter(created_at__date=today).count()
-        fertilizer_total = FertilizerShop.objects.count()
-
         data = [
-            {"title": "Total Advisors", "count": advisor_total},
-            {"title": "Advisors Added Today", "count": advisor_today},
-            {"title": "Total Fertilizer Shops", "count": fertilizer_total},
+            {
+                "title": "Total Advisors",
+                "count": Advisory.objects.count()
+            },
+            {
+                "title": "Advisors Added Today",
+                "count": Advisory.objects.filter(created_at__date=today).count()
+            },
+            {
+                "title": "Total Fertilizer Shops",
+                "count": FertilizerShop.objects.count()
+            }
         ]
-
         return Response(data)
-
-
-
-# from rest_framework.views import APIView
-# from rest_framework.response import Response
-# from rest_framework.permissions import IsAuthenticated
-# from rest_framework import generics
-# from datetime import date
-# from django.contrib.gis.measure import D
-# from .models import Region, Advisory, ServiceProvider
-# from .serializers import RegionSerializer, AdvisorySerializer, ServiceProviderSerializer
-
-# # 🔹 POST APIs
-# class RegionCreateAPIView(generics.CreateAPIView):
-#     queryset = Region.objects.all()
-#     serializer_class = RegionSerializer
-
-# class AdvisoryCreateAPIView(generics.CreateAPIView):
-#     queryset = Advisory.objects.all()
-#     serializer_class = AdvisorySerializer
-
-# class ServiceProviderCreateAPIView(generics.CreateAPIView):
-#     queryset = ServiceProvider.objects.all()
-#     serializer_class = ServiceProviderSerializer
-
-# # 🔹 Dashboard GET API
-# class AdvisoryDashboardAPIView(APIView):
-#     permission_classes = [IsAuthenticated]
-
-#     def get(self, request):
-#         crop = request.query_params.get("crop", "wheat")
-#         radius = int(request.query_params.get("radius", 50))
-#         region = request.user.profile.region  # Assuming user profile has region
-#         location_point = region.point
-
-#         advisories = Advisory.objects.filter(crop=crop, region=region)
-#         summary = {
-#             "active": advisories.count(),
-#             "critical": advisories.filter(urgency="critical").count(),
-#             "new_today": advisories.filter(date=date.today()).count()
-#         }
-
-#         highlight = advisories.order_by('-urgency', '-date').first()
-
-#         services = ServiceProvider.objects.filter(
-#             location__distance_lte=(location_point, D(km=radius))
-#         )
-
-#         return Response({
-#             "summary": summary,
-#             "highlight": AdvisorySerializer(highlight).data if highlight else {},
-#             "agri_services": {
-#                 "radius_km": radius,
-#                 "center": {
-#                     "lat": region.lat,
-#                     "lng": region.lng
-#                 },
-#                 "providers": ServiceProviderSerializer(services, many=True).data
-#             }
-#         })

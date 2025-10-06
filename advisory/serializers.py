@@ -18,20 +18,3 @@ class FertilizerShopSerializer(serializers.ModelSerializer):
 
 
 
-# from rest_framework import serializers
-# from .models import Region, Advisory, ServiceProvider
-
-# class RegionSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = Region
-#         fields = '__all__'
-
-# class AdvisorySerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = Advisory
-#         fields = '__all__'
-
-# class ServiceProviderSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = ServiceProvider
-#         fields = '__all__'
