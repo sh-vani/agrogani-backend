@@ -41,6 +41,7 @@ class User(AbstractBaseUser):
     email = models.EmailField(unique=True, null=True, blank=True)
     mobile = models.CharField(max_length=15, unique=True, null=True, blank=True)
     full_name = models.CharField(max_length=100)
+    location = models.CharField(max_length=200, blank=True, null=True)  # ✅ Added location field
     is_active = models.BooleanField(default=True)
     plan = models.ForeignKey(Plan, on_delete=models.SET_NULL, null=True, blank=True)
     date_joined = models.DateTimeField(default=timezone.now)

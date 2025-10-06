@@ -556,41 +556,73 @@ class DashboardSummaryAPIView(APIView):
         ]
 
 
+# farmers/views.py (or in your account/views.py)
+
+# farmers/views.py
 
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
+from django.db.models import Q
 from django.shortcuts import get_object_or_404
-from .models import User
+from .models import User  # Adjust import path
 from .serializers import FarmerSerializer
+from adminauth.auth import AdminJWTAuthentication
 
 class FarmersListView(APIView):
     """
-    List all farmers or search by query
-    GET /api/farmers/?search=John
+    List all farmers with optional filters:
+    - ?search=John
+    - ?status=active (or inactive)
     """
+    authentication_classes = [AdminJWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
     def get(self, request):
         search = request.GET.get('search', '').strip()
+        status_filter = request.GET.get('status', '').lower()
 
-        farmers = User.objects.all().select_related('plan')
+        # Start with all users (farmers)
+        farmers = User.objects.select_related('plan')
 
+        # Filter by status
+        if status_filter == 'active':
+            farmers = farmers.filter(is_active=True)
+        elif status_filter == 'inactive':
+            farmers = farmers.filter(is_active=False)
+
+        # Search functionality
         if search:
+            # Handle boolean search for is_active
+            is_active_search = None
+            if search.lower() in ['active', 'true', '1']:
+                is_active_search = True
+            elif search.lower() in ['inactive', 'false', '0']:
+                is_active_search = False
+
             farmers = farmers.filter(
-                models.Q(full_name__icontains=search) |
-                models.Q(email__icontains=search) |
-                models.Q(mobile__icontains=search) |
-                models.Q(id__icontains=search) |
-                models.Q(plan__name__icontains=search) |
-                models.Q(is_active__icontains=search.lower() in ['active', 'true'])
+                Q(full_name__icontains=search) |
+                Q(email__icontains=search) |
+                Q(mobile__icontains=search) |
+                Q(location__icontains=search) |  # ✅ Added location search
+                Q(id__icontains=search) |
+                Q(plan__name__icontains=search) |
+                (Q(is_active=True) if is_active_search is True else Q()) |
+                (Q(is_active=False) if is_active_search is False else Q())
             )
 
         serializer = FarmerSerializer(farmers, many=True)
         return Response(serializer.data)
 
+
 class FarmerDetailView(APIView):
     """
     Retrieve, Update or Delete a farmer
     """
+    authentication_classes = [AdminJWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
     def get_object(self, pk):
         return get_object_or_404(User, pk=pk)
 
@@ -613,24 +645,24 @@ class FarmerDetailView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+class ToggleFarmerStatusView(APIView):
+    """
+    Toggle farmer active/inactive status
+    PATCH /api/farmers/<id>/toggle-status/
+    """
+    authentication_classes = [AdminJWTAuthentication]
+    permission_classes = [IsAuthenticated]
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
+    def patch(self, request, pk):
+        farmer = get_object_or_404(User, pk=pk)
+        farmer.is_active = not farmer.is_active
+        farmer.save(update_fields=['is_active'])
+        
+        return Response({
+            "message": "Status updated successfully",
+            "farmer": {
+                "id": farmer.id,
+                "full_name": farmer.full_name,
+                "is_active": farmer.is_active
+            }
+        })

@@ -123,36 +123,42 @@ class PlanSerializer(serializers.ModelSerializer):
     class Meta:
         model = Plan
         fields = ['name']  # Only name needed for farmer list
+# farmers/serializers.py
+
+from rest_framework import serializers
+from django.utils import timezone
+from .models import User  # Adjust import path as per your structure
 
 class FarmerSerializer(serializers.ModelSerializer):
     plan_name = serializers.CharField(source='plan.name', read_only=True)
-    location = serializers.SerializerMethodField()  # You can add a location field if available
+    status_display = serializers.SerializerMethodField()
+    location = serializers.SerializerMethodField()
+    plan_end_date = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = [
             'id',
             'full_name',
-            'location',
-            'plan_name',
             'email',
             'mobile',
+            'location',  # ✅ Now included from model
             'is_active',
+            'status_display',
+            'plan_name',
             'date_joined',
-            'plan_end_date'  # We'll calculate this
+            'plan_end_date'
         ]
 
+    def get_status_display(self, obj):
+        return "Active" if obj.is_active else "Inactive"
+
     def get_location(self, obj):
-        # If you have location field, return it. Else return placeholder.
-        # You can add a `location` field to User model later.
-        return "Unknown"  # or obj.location if you add it
+        # Return actual location from model (can be null/blank)
+        return obj.location or "Not specified"
 
     def get_plan_end_date(self, obj):
-        # If you have UserPlan model, calculate from there
-        # For now, just return None or a dummy date
-        from django.utils import timezone
+        # Calculate plan end date (365 days from registration)
         if obj.date_joined:
             return obj.date_joined + timezone.timedelta(days=365)
         return None
-
-    plan_end_date = serializers.SerializerMethodField()
