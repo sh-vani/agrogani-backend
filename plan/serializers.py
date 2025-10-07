@@ -20,3 +20,13 @@ class UserPlanSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['plan', 'date_joined']
+
+
+# plans/serializers.py
+
+
+class PlanListSerializer(serializers.ModelSerializer):
+    """Serializer for user-side (only active plans)"""
+    class Meta:
+        model = Plan
+        fields = ['id', 'name', 'price', 'duration', 'features', 'device_limit']
