@@ -7,7 +7,6 @@ from accounts.models import User
 
 # accounts/serializers.py
 
-
 class PlanSerializer(serializers.ModelSerializer):
     features = serializers.ListField(  # ✅ Accept list from frontend
         child=serializers.CharField(),
@@ -39,7 +38,6 @@ class PlanSerializer(serializers.ModelSerializer):
         representation = super().to_representation(instance)
         representation['features'] = representation.pop('features_display', [])
         return representation
-
 
 # For User Side (Read-only)
 class PlanListSerializer(serializers.ModelSerializer):
