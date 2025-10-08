@@ -5,39 +5,57 @@ from rest_framework import serializers
 from accounts.models import Plan
 from accounts.models import User
 
-# accounts/serializers.py
+
+
+# serializers.py
 
 class PlanSerializer(serializers.ModelSerializer):
-    features = serializers.ListField(  # ✅ Accept list from frontend
-        child=serializers.CharField(),
+    # ✅ Accept list from frontend
+    features = serializers.ListField(
+        child=serializers.CharField(max_length=200),
         write_only=True
     )
-    features_display = serializers.SerializerMethodField(read_only=True)  # ✅ Display as list
+    # ✅ Display as list in API response
+    features_display = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Plan
         fields = [
             'id', 'name', 'price', 'duration', 'features', 'features_display',
-            'device_limit', 'is_active', 'created_at', 'updated_at'
+            'device_limit', 'is_active',
+            'created_at', 'updated_at'
         ]
         read_only_fields = ['created_at', 'updated_at']
 
     def get_features_display(self, obj):
+        """Convert stored string back to list for API response."""
         if obj.features:
-            return [f.strip() for f in obj.features.split(',') if f.strip()]
+            try:
+                return [f.strip() for f in obj.features.split(',') if f.strip()]
+            except:
+                return []
         return []
 
     def to_internal_value(self, data):
-        # Convert list to comma-separated string before saving
+        """
+        Convert incoming list to comma-separated string for model.
+        """
         if 'features' in data and isinstance(data['features'], list):
+            # Join list items into a single comma-separated string
             data['features'] = ', '.join(data['features'])
         return super().to_internal_value(data)
 
     def to_representation(self, instance):
-        # Show features as list in response
-        representation = super().to_representation(instance)
-        representation['features'] = representation.pop('features_display', [])
-        return representation
+        """
+        Customize output: show features as list.
+        """
+        ret = super().to_representation(instance)
+        # Replace 'features' (which is now a string) with the list version
+        ret['features'] = ret.pop('features_display', [])
+        return ret
+
+
+
 
 # For User Side (Read-only)
 class PlanListSerializer(serializers.ModelSerializer):
