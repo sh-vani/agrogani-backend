@@ -116,13 +116,24 @@ class ActivityLogSerializer(serializers.ModelSerializer):
 
 #admin dhasboard ka liya framer management
 
-from rest_framework import serializers
-from .models import User, Plan
 
-class PlanSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Plan
-        fields = ['name']  # Only name needed for farmer list
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
 # farmers/serializers.py
 
 from rest_framework import serializers

@@ -24,6 +24,7 @@ urlpatterns = [
     path('admin/plans/', AdminPlanListView.as_view(), name='admin-plan-list-create'),
     path('admin/plans/<int:pk>/', AdminPlanDetailView.as_view(), name='admin-plan-detail'),
     
+    
     # User URLs (JWT required for viewing)
     path('plans/', UserPlanListView.as_view(), name='user-plan-list'),        # ✅ JWT required
     path('plans/<int:pk>/', UserPlanDetailView.as_view(), name='user-plan-detail'), # ✅ JWT required
