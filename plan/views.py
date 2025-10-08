@@ -64,6 +64,96 @@ from django.shortcuts import get_object_or_404
 
 
 
+# plans/views.py
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from rest_framework import status
+from django.shortcuts import get_object_or_404
+from accounts.models import Plan
+from .serializers import PlanSerializer, PlanListSerializer
+from adminauth.auth import AdminJWTAuthentication
+
+
+# ================== ADMIN VIEWS ==================
+# plans/views.py
+class AdminPlanListView(APIView):
+    """Admin: List all plans (including inactive ones) + Create new plan"""
+    authentication_classes = [AdminJWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        plans = Plan.objects.all().order_by('price')
+        serializer = PlanSerializer(plans, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        serializer = PlanSerializer(data=request.data)
+        if serializer.is_valid():
+            # Save new plan
+            plan = serializer.save()
+
+            # Custom success response
+            return Response({
+                "success": True,
+                "message": "Plan added successfully!",
+                "data": PlanSerializer(plan).data
+            }, status=status.HTTP_201_CREATED)
+        
+        return Response({
+            "success": False,
+            "errors": serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+
+class AdminPlanDetailView(APIView):
+    """Admin: Retrieve, Update, Delete a plan"""
+    authentication_classes = [AdminJWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self, pk):
+        return get_object_or_404(Plan, pk=pk)
+
+    def get(self, request, pk):
+        plan = self.get_object(pk)
+        serializer = PlanSerializer(plan)
+        return Response(serializer.data)
+
+    def put(self, request, pk):
+        plan = self.get_object(pk)
+        serializer = PlanSerializer(plan, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk):
+        plan = self.get_object(pk)
+        plan.delete()
+        return Response({"message": "Plan deleted successfully."})
+    
+
+# ================== USER VIEWS ==================
+class UserPlanListView(APIView):
+    """User: List only active plans (JWT required)"""
+    authentication_classes = [AdminJWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        plans = Plan.objects.filter(is_active=True).order_by('price')
+        serializer = PlanListSerializer(plans, many=True)
+        return Response(serializer.data)
+
+
+class UserPlanDetailView(APIView):
+    """User: Get a specific active plan"""
+    authentication_classes = [AdminJWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        plan = get_object_or_404(Plan, pk=pk, is_active=True)
+        serializer = PlanListSerializer(plan)
+        return Response(serializer.data)
 
 
 
@@ -123,139 +213,6 @@ class ActivePlanView(APIView):
             serializer = UserPlanSerializer(request.user)
             return Response(serializer.data)
         return Response({"message": "No active plan."})
-
-
-
-
-# plans/views.py
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from rest_framework import status
-from django.shortcuts import get_object_or_404
-from accounts.models import Plan
-from .serializers import PlanSerializer, PlanListSerializer
-from adminauth.auth import AdminJWTAuthentication  # Your custom auth
-
-
-
-# === USER VIEWS (Read-only but JWT required) ===
-class UserPlanListView(APIView):
-    """
-    User: List only active plans (JWT required)
-    """
-    authentication_classes = [AdminJWTAuthentication]  # ✅ JWT required
-    permission_classes = [IsAuthenticated]              # ✅ Must be logged in
-
-    def get(self, request):
-        plans = Plan.objects.filter(is_active=True)  # Only active plans
-        serializer = PlanListSerializer(plans, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-class UserPlanDetailView(APIView):
-    """
-    User: Get specific active plan (JWT required)
-    """
-    authentication_classes = [AdminJWTAuthentication]  # ✅ JWT required
-    permission_classes = [IsAuthenticated]              # ✅ Must be logged in
-
-    def get_object(self, pk):
-        return get_object_or_404(Plan, pk=pk, is_active=True)
-
-    def get(self, request, pk):
-        plan = self.get_object(pk)
-        serializer = PlanListSerializer(plan)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-    
-
-
-
-
-
-
-
-
-
-
-
-# plans/views.py
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from rest_framework import status
-from django.shortcuts import get_object_or_404
-from accounts.models import Plan
-from .serializers import PlanSerializer
-from adminauth.auth import AdminJWTAuthentication
-
-class AdminPlanListView(APIView):
-    """
-    Admin: List all plans (including inactive ones) + Create new plan
-    """
-    authentication_classes = [AdminJWTAuthentication]
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        plans = Plan.objects.all().order_by('price')
-        serializer = PlanSerializer(plans, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    def post(self, request):
-        serializer = PlanSerializer(data=request.data)
-        if serializer.is_valid():
-            # Convert features back to comma-separated string
-            features = ', '.join(serializer.validated_data.get('features', []))
-            
-            plan = Plan.objects.create(
-                name=serializer.validated_data['name'],
-                price=serializer.validated_data['price'],
-                duration=serializer.validated_data['duration'],
-                features=features,
-                device_limit=serializer.validated_data['device_limit'],
-                is_active=serializer.validated_data['is_active']
-            )
-            return Response(PlanSerializer(plan).data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-class AdminPlanDetailView(APIView):
-    """
-    Admin: Get, Update, Delete specific plan
-    """
-    authentication_classes = [AdminJWTAuthentication]
-    permission_classes = [IsAuthenticated]
-
-    def get_object(self, pk):
-        return get_object_or_404(Plan, pk=pk)
-
-    def get(self, request, pk):
-        plan = self.get_object(pk)
-        serializer = PlanSerializer(plan)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    def put(self, request, pk):
-        plan = self.get_object(pk)
-        serializer = PlanSerializer(plan, data=request.data, partial=True)
-        if serializer.is_valid():
-            # Update fields individually to handle comma-separated strings
-            for field, value in serializer.validated_data.items():
-                if field == 'features':
-                    setattr(plan, field, ', '.join(value))
-                else:
-                    setattr(plan, field, value)
-            plan.save()
-            return Response(PlanSerializer(plan).data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    def delete(self, request, pk):
-        plan = self.get_object(pk)
-        plan.delete()
-        return Response(
-            {"message": "Plan deleted successfully."}, 
-            status=status.HTTP_200_OK
-        )
-    
-
-
 
 
 
