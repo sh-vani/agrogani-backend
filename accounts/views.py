@@ -633,3 +633,108 @@ class ToggleFarmerStatusView(APIView):
                 "is_active": farmer.is_active
             }
         })
+    
+
+
+
+    # admin revenue report view
+
+
+    from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from django.db.models import Sum
+from django.utils import timezone
+from datetime import timedelta
+from .models import Plan, RazorpayLog, UserPlan
+
+from adminauth.auth import AdminJWTAuthentication # ✅ same as in Plan API
+from rest_framework.permissions import IsAuthenticated
+
+
+class AdminRevenueReportView(APIView):
+    """
+    Admin: Full dynamic revenue summary (JWT protected)
+    Now includes 12-month (1 year) monthly revenue chart.
+    """
+    authentication_classes = [AdminJWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            plans = Plan.objects.all()
+            report_data = []
+            total_revenue = 0
+            total_active_users = 0
+
+            # ---- PLAN WISE REVENUE ----
+            for plan in plans:
+                # ✅ Total revenue for this plan
+                revenue = (
+                    RazorpayLog.objects.filter(plan=plan, status="success")
+                    .aggregate(Sum("amount"))["amount__sum"] or 0
+                )
+
+                # ✅ Active subscriptions (not expired)
+                active_users = UserPlan.objects.filter(
+                    plan=plan, end_date__gte=timezone.now()
+                ).count()
+
+                # ✅ Total users ever subscribed to this plan
+                total_users = UserPlan.objects.filter(plan=plan).count()
+
+                total_revenue += revenue
+                total_active_users += active_users
+
+                report_data.append({
+                    "plan_id": plan.id,
+                    "plan_name": plan.name,
+                    "price": float(plan.price),
+                    "duration": plan.duration,
+                    "active_users": active_users,
+                    "total_users": total_users,
+                    "total_revenue": round(float(revenue), 2),
+                })
+
+            # ---- MONTHLY REVENUE (Last 12 months) ----
+            today = timezone.now()
+            month_labels, month_values = [], []
+
+            for i in range(11, -1, -1):  # 12 months loop
+                month_date = today - timedelta(days=30 * i)
+                month_start = month_date.replace(day=1)
+                next_month = (month_start + timedelta(days=32)).replace(day=1)
+
+                month_total = (
+                    RazorpayLog.objects.filter(
+                        created_at__gte=month_start,
+                        created_at__lt=next_month,
+                        status="success"
+                    ).aggregate(Sum("amount"))["amount__sum"] or 0
+                )
+
+                month_labels.append(month_date.strftime("%b %Y"))
+                month_values.append(round(float(month_total), 2))
+
+            # ---- FINAL RESPONSE ----
+            return Response({
+                "success": True,
+                "message": "Revenue report (1-year) fetched successfully!",
+                "summary": {
+                    "total_revenue": round(float(total_revenue), 2),
+                    "total_active_users": total_active_users,
+                    "total_plans": plans.count(),
+                },
+                "plans": report_data,
+                "monthly_chart": {
+                    "labels": month_labels,
+                    "values": month_values
+                }
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({
+                "success": False,
+                "message": "Something went wrong while generating revenue report.",
+                "error": str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import RegisterView, VerifyOTPView, SetPasswordView,CreatePlanOrderAPIView, VerifyPaymentAPIView,dashboard_header,FarmersListView,FarmerDetailView,ToggleFarmerStatusView
+from .views import RegisterView, VerifyOTPView, SetPasswordView,CreatePlanOrderAPIView, VerifyPaymentAPIView,dashboard_header,FarmersListView,FarmerDetailView,ToggleFarmerStatusView,AdminRevenueReportView
 from .views import (LoginView,WeatherAPIView,ForgotPasswordRequestView,ForgotPasswordVerifyOTPView,ResetPasswordView,RecentActivityAPI,ChangePasswordView, DashboardSummaryAPIView)
 # recent_user_activities
 
@@ -30,7 +30,8 @@ urlpatterns = [
     path('recent-activities/', RecentActivityAPI.as_view(), name='recent_activities'),
 
  path("admin/dhasboard/", DashboardSummaryAPIView.as_view(), name="dhasboard-summary"),
- 
+ path('admin/revenuereport/', AdminRevenueReportView.as_view(), name='admin-revenue-report'),
+
     
     path('farmers/', FarmersListView.as_view(), name='farmers-list'),
     path('farmers/<int:pk>/', FarmerDetailView.as_view(), name='farmer-detail'),
