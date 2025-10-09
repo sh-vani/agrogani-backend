@@ -639,49 +639,44 @@ class ToggleFarmerStatusView(APIView):
 
     # admin revenue report view
 
+# views.py
+# views.py — Using ONLY User model (NO UserPlan)
 
-    from rest_framework.views import APIView
+from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from django.db.models import Sum
 from django.utils import timezone
 from datetime import timedelta
-from .models import Plan, RazorpayLog, UserPlan
-
-from adminauth.auth import AdminJWTAuthentication # ✅ same as in Plan API
+from .models import Plan, RazorpayLog, User  # ✅ Import User, not UserPlan
+from adminauth.auth import AdminJWTAuthentication
 from rest_framework.permissions import IsAuthenticated
 
 
 class AdminRevenueReportView(APIView):
-    """
-    Admin: Full dynamic revenue summary (JWT protected)
-    Now includes 12-month (1 year) monthly revenue chart.
-    """
     authentication_classes = [AdminJWTAuthentication]
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         try:
-            plans = Plan.objects.all()
+            plans = Plan.objects.filter(is_active=True)
             report_data = []
             total_revenue = 0
             total_active_users = 0
 
-            # ---- PLAN WISE REVENUE ----
             for plan in plans:
-                # ✅ Total revenue for this plan
+                # ✅ Revenue from RazorpayLog
                 revenue = (
                     RazorpayLog.objects.filter(plan=plan, status="success")
                     .aggregate(Sum("amount"))["amount__sum"] or 0
                 )
 
-                # ✅ Active subscriptions (not expired)
-                active_users = UserPlan.objects.filter(
-                    plan=plan, end_date__gte=timezone.now()
-                ).count()
+                # ✅ ACTIVE USERS = Users whose current plan is this plan
+                # ⚠️ WARNING: This assumes ALL users with a plan are ACTIVE
+                active_users = User.objects.filter(plan=plan, is_active=True).count()
 
-                # ✅ Total users ever subscribed to this plan
-                total_users = UserPlan.objects.filter(plan=plan).count()
+                # ✅ TOTAL USERS = Same as active (since no history stored)
+                total_users = active_users  # Because no subscription history
 
                 total_revenue += revenue
                 total_active_users += active_users
@@ -698,28 +693,31 @@ class AdminRevenueReportView(APIView):
 
             # ---- MONTHLY REVENUE (Last 12 months) ----
             today = timezone.now()
-            month_labels, month_values = [], []
+            month_labels = []
+            month_values = []
 
-            for i in range(11, -1, -1):  # 12 months loop
-                month_date = today - timedelta(days=30 * i)
-                month_start = month_date.replace(day=1)
-                next_month = (month_start + timedelta(days=32)).replace(day=1)
+            for i in range(12):
+                month_start = (today - timedelta(days=30 * i)).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+                next_month_start = (month_start + timedelta(days=32)).replace(day=1)
 
                 month_total = (
                     RazorpayLog.objects.filter(
                         created_at__gte=month_start,
-                        created_at__lt=next_month,
+                        created_at__lt=next_month_start,
                         status="success"
                     ).aggregate(Sum("amount"))["amount__sum"] or 0
                 )
 
-                month_labels.append(month_date.strftime("%b %Y"))
+                month_label = month_start.strftime("%b %Y")
+                month_labels.append(month_label)
                 month_values.append(round(float(month_total), 2))
 
-            # ---- FINAL RESPONSE ----
+            month_labels.reverse()
+            month_values.reverse()
+
             return Response({
                 "success": True,
-                "message": "Revenue report (1-year) fetched successfully!",
+                "message": "Revenue report (using User model) fetched!",
                 "summary": {
                     "total_revenue": round(float(total_revenue), 2),
                     "total_active_users": total_active_users,
@@ -735,6 +733,6 @@ class AdminRevenueReportView(APIView):
         except Exception as e:
             return Response({
                 "success": False,
-                "message": "Something went wrong while generating revenue report.",
+                "message": "Error in revenue report.",
                 "error": str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

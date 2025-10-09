@@ -30,26 +30,26 @@ DEBUG = True
 
 
 
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'console':{
-            'class': 'logging.StreamHandler',
-        },
-        'file': {
-            'level': 'DEBUG',
-            'class': 'logging.FileHandler',
-            'filename': 'django_debug.log',
-        },
-    },
-    'loggers': {
-        'django': {
-            'handlers': ['console', 'file'],
-            'level': 'DEBUG',
-        },
-    },
-}
+# LOGGING = {
+#     'version': 1,
+#     'disable_existing_loggers': False,
+#     'handlers': {
+#         'console':{
+#             'class': 'logging.StreamHandler',
+#         },
+#         'file': {
+#             'level': 'DEBUG',
+#             'class': 'logging.FileHandler',
+#             'filename': 'django_debug.log',
+#         },
+#     },
+#     'loggers': {
+#         'django': {
+#             'handlers': ['console', 'file'],
+#             'level': 'DEBUG',
+#         },
+#     },
+# }
 
 
 
@@ -227,7 +227,7 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'shivanikush2002@gmail.com'
 EMAIL_HOST_PASSWORD =  'txym djer wcuz aihw' 
 
-
+EMAIL_TIMEOUT = 10  # seconds
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -296,7 +296,7 @@ else:
         "http://localhost:5173",
         "https://supportive-success-production.up.railway.app",
 
-        "https://agro1.netlify.app/",
+        "https://agro1.netlify.app",
        
     ]
     CORS_ALLOW_CREDENTIALS = True
