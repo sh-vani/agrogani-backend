@@ -296,7 +296,7 @@ else:
         "http://localhost:5173",
         "https://supportive-success-production.up.railway.app",
 
-        "https://agro1.netlify.app/",
+        "https://agro1.netlify.app",
        
     ]
     CORS_ALLOW_CREDENTIALS = True
